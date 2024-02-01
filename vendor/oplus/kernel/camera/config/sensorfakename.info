@@ -1,0 +1,9 @@
+#project    hardware_name     fake_name     des
+Nvwa_22113   IMX966           nvwamain      main cam
+Nvwa_22113   S5KJN1           nvwauwide     ultra wide cam
+Nvwa_22113   OV64B            nvwatele      tele cam
+Nvwa_22113   IMX709           nvwafront     front cam
+Nvwa_22113   IMX890           nvwasun2      main pre cam
+Nvwa_22113   IMX890           nvwaearth     tele pre cam
+Nvwa_22113   IMX882           nvwamars      ultra wide pre cam
+Nvwa_22113   IMX581           nvwamars2     ultra wide pre cam
