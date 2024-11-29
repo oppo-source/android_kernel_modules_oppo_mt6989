@@ -1,0 +1,499 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2022 MediaTek Inc.
+ */
+/dts-v1/;
+/plugin/;
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/phy/phy.h>
+#include <dt-bindings/pinctrl/mt6878-pinfunc.h>
+#include "mediatek/nfc/mt6878_Omega_S2_23265.dtsi"
+#include "mediatek/omegas2_regulator_wl2868c.dtsi"
+#include "mediatek/casio_regulator_wl2866d.dtsi"
+#if 0
+#include <dt-bindings/pinctrl/mt6897-pinfunc.h>
+#endif
+
+/* #ifdef OPLUS_FEATURE_SENSOR */
+#include "mediatek/oplus_sensor_24678.dtsi"
+/* #endif */
+
+/* #ifdef OPLUS_FEATURE_CHG_BASIC */
+#include "mediatek/oplus_charge_24679.dtsi"
+/* #endif */
+
+/* #ifdef OPLUS_FEATURE_FINGERPRINT */
+#include "mediatek/oplus_uff_24606.dtsi"
+/* #endif */
+&chosen {
+bootargs_ext = "";
+};
+
+&mtk_leds {
+	compatible = "mediatek,disp-leds";
+	status = "okay";
+
+	backlight {
+		label = "lcd-backlight";
+		led_mode = <4>;
+		min-brightness = <1>;
+		max-brightness = <4095>;
+		max-hw-brightness = <4095>;
+		led-bits = <13>;
+		trans-bits = <13>;
+		default-state = "on";
+	};
+};
+
+&pdc {
+	pd-vbus-upper-bound = <9000000>;
+};
+
+#if 0
+
+&connfem {
+/* Enable epa_elna node to support Wifi & BT ePA/eLNA FEM on customer load */
+#if 0
+	epa-elna {
+		parts = <&wlan7207h &wlan7207c>;
+		wifi {
+			flags-0 {
+				open-loop;
+			};
+		};
+		bt {
+			flags-0 {
+				/* choose one of: epa-elna/epa/elna/bypass */
+				epa-elna;
+			};
+		};
+	};
+#endif
+};
+
+/* GPS GPIO standardization start */
+&pio {
+	gps_pins_default: gps-default {
+	};
+	gps_l1_lna_pins_ol: gps-l1-lna0 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO33__FUNC_GPIO33>;
+			output-low;
+		};
+	};
+	gps_l1_lna_pins_dsp_ctrl: gps-l1-lna1 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO33__FUNC_GPS_L1_ELNA_EN>;
+		};
+	};
+	gps_l1_lna_pins_oh: gps-l1-lna2 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO33__FUNC_GPIO33>;
+			output-high;
+		};
+	};
+	/* gps_l5_lna_pins_ol: gps-l5-lna0 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO144__FUNC_GPIO144>;
+			output-low;
+		};
+	};
+	gps_l5_lna_pins_dsp_ctrl: gps-l5-lna1 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO144__FUNC_GPS_L5_ELNA_EN>;
+		};
+	};
+	gps_l5_lna_pins_oh: gps-l5-lna2 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO144__FUNC_GPIO144>;
+			output-high;
+		};
+	}; */
+};
+&gps {
+	pinctrl-names = "default",
+		"gps_l1_lna_disable",
+		"gps_l1_lna_dsp_ctrl",
+		"gps_l1_lna_enable";
+		/* "gps_l5_lna_disable",
+		"gps_l5_lna_dsp_ctrl",
+		"gps_l5_lna_enable"; */
+	pinctrl-0 = <&gps_pins_default>;
+	pinctrl-1 = <&gps_l1_lna_pins_ol>;
+	pinctrl-2 = <&gps_l1_lna_pins_dsp_ctrl>;
+	pinctrl-3 = <&gps_l1_lna_pins_oh>;
+	/* pinctrl-4 = <&gps_l5_lna_pins_ol>;
+	pinctrl-5 = <&gps_l5_lna_pins_dsp_ctrl>;
+	pinctrl-6 = <&gps_l5_lna_pins_oh>; */
+	status = "okay";
+};
+/* GPS GPIO standardization end */
+
+#endif
+
+&i2c6 {
+	spk: speaker-amp@5c {
+		compatible = "richtek,rt5512";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		#sound-dai-cells = <0>;
+		reg = <0x5c>;
+		status = "okay";
+		sound-name-prefix = "Left";
+	};
+};
+
+&sound {
+	mediatek,spk-i2s = <25 24>;
+	mediatek,speaker-codec {
+		sound-dai = <&spk>;
+	};
+};
+
+
+
+&mtkfb {
+	pinctrl-names = "lcd_bias_enp1_gpio", "lcd_bias_enp0_gpio",
+		"lcd_bias_enn1_gpio", "lcd_bias_enn0_gpio",
+		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
+		"mode_te_te", "lcm_led_en1_gpio", "lcm_led_en0_gpio";
+	pinctrl-0 = <&mtkfb_pins_lcd_bias_enp1>;
+	pinctrl-1 = <&mtkfb_pins_lcd_bias_enp0>;
+	pinctrl-2 = <&mtkfb_pins_lcd_bias_enn1>;
+	pinctrl-3 = <&mtkfb_pins_lcd_bias_enn0>;
+	pinctrl-4 = <&mtkfb_pins_lcm_rst_out1_gpio>;
+	pinctrl-5 = <&mtkfb_pins_lcm_rst_out0_gpio>;
+	pinctrl-6 = <&mtkfb_pins_lcm_dsi_te>;
+	pinctrl-7 = <&mtkfb_pins_lcm_led_en1>;
+	pinctrl-8 = <&mtkfb_pins_lcm_led_en0>;
+
+	status = "okay";
+};
+
+&oplus_secure_common {
+    compatible = "oplus,secure_common";
+    oplus,sec_reg_num = <0>;
+    oplus,sec_en_anti_reg = <0>;
+    oplus,sec_override1_reg = <0>;
+    oplus,override1_en_value = <0>;
+};
+
+&pio {
+	mtkfb_pins_lcd_bias_enp1: lcd-bias-enp1-gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO149__FUNC_GPIO149>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enp0: lcd-bias-enp0-gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO149__FUNC_GPIO149>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enn1: lcd-bias-enn1-gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO149__FUNC_GPIO149>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enn0: lcd-bias-enn0-gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO149__FUNC_GPIO149>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcm_rst_out1_gpio: lcm-rst-out1-gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO90__FUNC_GPIO90>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcm_rst_out0_gpio: lcm-rst-out0-gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO90__FUNC_GPIO90>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	mtkfb_pins_lcm_dsi_te: lcm-dsi-te {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO89__FUNC_DSI_TE>;
+		};
+	};
+
+	mtkfb_pins_lcm_led_en1: lcm-led-en1-gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO149__FUNC_GPIO149>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcm_led_en0: lcm-led-en0-gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO149__FUNC_GPIO149>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+
+&dispsys_config {
+	pinctrl-names = "mode_te_te";
+	pinctrl-0 = <&mtkfb_pins_lcm_dsi_te>;
+	status = "okay";
+
+	helper-value = <0>, /*MTK_DRM_OPT_STAGE*/
+				<1>, /*MTK_DRM_OPT_USE_CMDQ*/
+				<1>, /*MTK_DRM_OPT_USE_M4U*/
+				<1>, /*MTK_DRM_OPT_MMQOS_SUPPORT*/
+				<1>, /*MTK_DRM_OPT_MMDVFS_SUPPORT*/
+				<0>, /*MTK_DRM_OPT_SODI_SUPPORT*/
+				<1>, /*MTK_DRM_OPT_IDLE_MGR*/
+				<0>, /*MTK_DRM_OPT_IDLEMGR_SWTCH_DECOUPLE*/
+				<0>, /*MTK_DRM_OPT_IDLEMGR_BY_REPAINT*/
+				<0>, /*MTK_DRM_OPT_IDLEMGR_ENTER_ULPS*/
+				<0>, /*MTK_DRM_OPT_IDLEMGR_KEEP_LP11*/
+				<0>, /*MTK_DRM_OPT_DYNAMIC_RDMA_GOLDEN_SETTING*/
+				<1>, /*MTK_DRM_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ*/
+				<1>, /*MTK_DRM_OPT_IDLEMGR_ASYNC*/
+				<0>, /*MTK_DRM_OPT_MET_LOG*/
+				<1>, /*MTK_DRM_OPT_USE_PQ*/
+				<1>, /*MTK_DRM_OPT_ESD_CHECK_RECOVERY*/
+				<1>, /*MTK_DRM_OPT_ESD_CHECK_SWITCH*/
+				<1>, /*MTK_DRM_OPT_PRESENT_FENCE*/
+				<0>, /*MTK_DRM_OPT_RDMA_UNDERFLOW_AEE*/
+				<1>, /*MTK_DRM_OPT_DSI_UNDERRUN_AEE*/
+				<0>, /*MTK_DRM_OPT_ODDMR_OD_AEE*/
+				<0>, /*MTK_DRM_OPT_ODDMR_DMR_AEE*/
+				<1>, /*MTK_DRM_OPT_HRT*/
+				<0>, /*MTK_DRM_OPT_HRT_MODE*/
+				<0>, /*MTK_DRM_OPT_DELAYED_TRIGGER*/
+				<1>, /*MTK_DRM_OPT_OVL_EXT_LAYER*/
+				<1>, /*MTK_DRM_OPT_AOD*/
+				<1>, /*MTK_DRM_OPT_RPO*/
+				<0>, /*MTK_DRM_OPT_DUAL_PIPE*/
+				<0>, /*MTK_DRM_OPT_DC_BY_HRT*/
+				<0>, /*MTK_DRM_OPT_OVL_WCG*/
+				<0>, /*MTK_DRM_OPT_OVL_SBCH*/
+				<1>, /*MTK_DRM_OPT_COMMIT_NO_WAIT_VBLANK*/
+				<0>, /*MTK_DRM_OPT_MET*/
+				<0>, /*MTK_DRM_OPT_REG_PARSER_RAW_DUMP*/
+				<0>, /*MTK_DRM_OPT_VP_PQ*/
+				<0>, /*MTK_DRM_OPT_GAME_PQ*/
+				<0>, /*MTK_DRM_OPT_MMPATH*/
+				<0>, /*MTK_DRM_OPT_HBM*/
+				<0>, /*MTK_DRM_OPT_VDS_PATH_SWITCH*/
+				<0>, /*MTK_DRM_OPT_LAYER_REC*/
+				<1>, /*MTK_DRM_OPT_CLEAR_LAYER*/
+				<1>, /*MTK_DRM_OPT_LFR*/
+				<0>, /*MTK_DRM_OPT_SF_PF*/
+				<1>, /*MTK_DRM_OPT_DYN_MIPI_CHANGE*/
+				<0>, /*MTK_DRM_OPT_PRIM_DUAL_PIPE*/
+				<0>, /*MTK_DRM_OPT_MSYNC2_0*/
+				<1>, /*MTK_DRM_OPT_MML_PRIMARY*/
+				<0>, /*MTK_DRM_OPT_MML_SUPPORT_CMD_MODE*/
+				<0>, /*MTK_DRM_OPT_MML_PQ*/
+				<0>, /*MTK_DRM_OPT_MML_IR*/
+				<0>, /*MTK_DRM_OPT_DUAL_TE*/
+				<0>, /*MTK_DRM_OPT_RES_SWITCH*/
+				<0>, /*MTK_DRM_OPT_PREFETCH_TE*/
+				<0>, /*MTK_DRM_OPT_VIDLE_APSRC_OFF*/
+				<0>, /*MTK_DRM_OPT_VIDLE_DSI_PLL_OFF*/
+				<0>, /*MTK_DRM_OPT_CHECK_TRIGGER_MERGE*/
+				<0>, /*MTK_DRM_OPT_VIRTUAL_DISP*/
+				<1>, /*MTK_DRM_OPT_OVL_BW_MONITOR*/
+				<0>, /*MTK_DRM_OPT_GPU_CACHE*/
+				<1>, /*MTK_DRM_OPT_SPHRT*/
+				<1>, /*MTK_DRM_OPT_SDPA_OVL_SWITCH*/
+				<0>, /*MTK_DRM_OPT_HRT_BY_LARB*/
+				<1>, /*MTK_DRM_OPT_LAYERING_RULE_BY_LARB*/
+				<1>, /*MTK_DRM_OPT_RES_SWITCH_ON_AP*/
+				<0>, /*MTK_DRM_OPT_TILE_OVERHEAD*/
+				<1>, /*MTK_DRM_OPT_VIDLE_TOP_EN*/
+				<0>, /*MTK_DRM_OPT_VIDLE_MTCMOS_DT_EN*/
+				<1>, /*MTK_DRM_OPT_VIDLE_MMINFRA_DT_EN*/
+				<0>, /*MTK_DRM_OPT_VIDLE_DVFS_DT_EN*/
+				<0>, /*MTK_DRM_OPT_VIDLE_QOS_DT_EN*/
+				<0>, /*MTK_DRM_OPT_VIDLE_GCE_TS_EN*/
+				<0>, /*MTK_DRM_OPT_VIDLE_DECOUPLE_MODE*/
+				<0>, /*MTK_DRM_OPT_VIDLE_VDO_PANEL*/
+				<0>, /*MTK_DRM_OPT_VIDLE_HOME_SCREEN_IDLE*/
+				<0>, /*MTK_DRM_OPT_DPC_PRE_TE_EN*/
+				<0>; /*"MTK_DRM_OPT_PER_LARB_PORT_PEAK"*/
+};
+
+&odm {
+/* Add for sim detect */
+    oplus_sim_detect {
+        compatible = "oplus, sim_detect";
+        Hw,sim_det = <&pio 46 0x00>;
+    };
+};
+
+&dsi0 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	panel1@0 {
+		compatible = "s6e8fc3,fhdp,dsi,vdo,samsung,ams667fk03";
+		reg = <0>;
+		vddr-enable-gpios = <&pio 3 0>;
+		reset-gpios = <&pio 90 0>;
+		vci-enable-gpios = <&pio 29 0>;
+		oplus,ofp-fp-type = <0x200>;
+		pinctrl-names = "default";
+		port {
+			panel_in1: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
+	ports {
+		port {
+			dsi_out: endpoint {
+				remote-endpoint = <&panel_in1>;
+			};
+		};
+	};
+};
+
+&odm {
+    /*OPLUS_FEATURE_OEM_OCDT oppo project start */
+	oplus_project:oplus_project {
+		compatible = "oplus,oplus_project";
+	};
+    
+    oplus_boardid:oplus_boardid {
+		compatible = "oplus,oplus_boardid-v2";
+		support-dtsino=<24679>;//only one u32
+		/*first one is low 32bit, last one is highest 32bit, must be 32-bit for 4gpios*/
+		support-pcbmask=<0xffffffff 0xffffffff 0xffffffff>;
+	};
+
+	pmic_history_count:pmic_history_count {
+	};
+	pmic_history0:pmic_history0 {
+	};
+	pmic_history1:pmic_history1 {
+	};
+	pmic_history2:pmic_history2 {
+	};
+	pmic_history3:pmic_history3 {
+	};
+
+};
+
+//Network RF add SWTP
+&pio {
+	//#ifdef OPLUS_VENDOR_SWTP
+	swtp: swtp {
+		compatible = "mediatek, swtp-eint";
+	};
+	//#endif  /*OPLUS_VENDOR_SWTP*/
+};
+
+/*
+ * Trustonic Mobilecore real driver
+ */
+&mobicore{
+        trustonic,real-drv = <1>;
+};
+
+//#ifdef OPLUS_FEATURE_STORAGE
+&mmc1 {
+	status = "okay";
+};
+
+&mmc1_pins_default {
+	pins-cmd-dat {
+		drive-strength = <2>;
+	};
+
+	pins-clk {
+		drive-strength = <2>;
+	};
+};
+&mmc1_pins_uhs {
+	pins-cmd-dat {
+		drive-strength = <2>;
+	};
+
+	pins-clk {
+		drive-strength = <2>;
+	};
+};
+//#endif /*OPLUS_FEATURE_STORAGE*/
+
+&accdet {
+//#ifdef VENDOR_EDIT
+	/* moisture HW mode config start. Enable moisture detection or not
+	 * default use HW mode for moisture detection
+	 */
+	moisture_detect_enable = <1>;
+//#endif /* VENDOR_EDIT */
+	/* select VTH to 2v and 500k, use internal resitance */
+	eint_use_ext_res = <0>;
+//#ifdef VENDOR_EDIT
+	/* enable eint detection mode, if moisture detection enable
+	 * eint_detect_mode = moisture_detect_mode;otherwise, select
+	 * eint_detect_mode = 4 as DEFAULT
+	 */
+	eint_detect_mode = <5>;
+	/* enable moisture detection mode, if moisture detection enable
+	 * eint_detect_mode = moisture_detect_mode
+	 */
+	moisture_detect_mode = <5>;
+	/* select 0: 2.8V; 1: 2.4V; 2: 2V; 3: VTH=MVTH(VTH2) */
+	moisture_comp_vth = <2>;
+	/* vref2 voltage for different water impedance */
+//#ifdef VENDOR_EDIT
+	moisture_comp_vref2 = <2>;
+//
+	/* vref2 voltage for different water impedance */
+//	moisture_comp_vref2 = <0>;
+//#endif
+	/* moisture HW mode config end */
+
+	/* moisture SW mode config start, use external resister or not.
+	 * DEFAULT NOT NEED
+	 */
+	moisture_use_ext_res = <0>;
+	/* moisture external resister ohm, SW mode by auxadc */
+	moisture-external-r = <2000000>;
+	/* moisture internal resister ohm, SW mode by auxadc */
+	moisture-internal-r = <47000>;
+	/* moisture of water resister ohm, SW mode by auxadc*/
+	moisture-water-r = <10000>;
+	/* moisture SW mode config end */
+//#endif /* VENDOR_EDIT */
+	//Modify for MT6369 Casio headset key
+	headset-three-key-threshold = <0 80 220 400>;
+	//Modify for MT6369 Casio Eint Debounce
+	headset-mode-setting = <0x500 0x500 1 0x1f0
+				0x800 0x800 0x20 0x44
+				0x4 0x1
+				0x5 0xc 0xc 0xd 0xe>;
+	/* 2024/6/29, add for modifying vref2 from 900mv to 990mv*/
+	moisture-vref2-modify = <1>;
+};
+
+#include <oplus6878_24679/cust.dtsi>
+#include "mediatek/cust_mt6878_casio_camera_v4l2.dtsi"
+#include "mediatek/cust_k6878_connfem.dtsi"
+#include "mediatek/mt6878-sia81x9-casio.dtsi"
+#include "mediatek/oplus_tp_24678.dtsi"
+#include "mediatek/cust_mt6878_casio_thermal.dtsi"
+/*End of this file, DO NOT ADD ANYTHING HERE*/

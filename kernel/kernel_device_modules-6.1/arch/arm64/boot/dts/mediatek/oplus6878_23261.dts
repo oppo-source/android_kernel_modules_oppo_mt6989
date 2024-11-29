@@ -1,0 +1,387 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2022 MediaTek Inc.
+ */
+/dts-v1/;
+/plugin/;
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/phy/phy.h>
+#include <dt-bindings/pinctrl/mt6878-pinfunc.h>
+#include "mediatek/nfc/mt6878_Omega_S2_23265.dtsi"
+#include "mediatek/omegas2_regulator_wl2868c.dtsi"
+#if 0
+#include <dt-bindings/pinctrl/mt6897-pinfunc.h>
+#endif
+
+/* #ifdef OPLUS_FEATURE_SENSOR */
+#include "mediatek/oplus_sensor_23261.dtsi"
+/* #endif */
+
+/* #ifdef OPLUS_FEATURE_CHG_BASIC */
+#include "mediatek/oplus_charge_23261.dtsi"
+/* #endif */
+
+/* #ifdef OPLUS_FEATURE_FINGERPRINT */
+#include "mediatek/oplus_uff_23261_23262.dtsi"
+/* #endif */
+
+&chosen {
+bootargs_ext = "";
+};
+
+&mtk_leds {
+	compatible = "mediatek,disp-leds";
+	status = "okay";
+
+	backlight {
+		label = "lcd-backlight";
+		led_mode = <4>;
+		min-brightness = <1>;
+		max-brightness = <4094>;
+		max-hw-brightness = <4094>;
+		led-bits = <13>;
+		trans-bits = <13>;
+		default-state = "on";
+	};
+};
+
+&pdc {
+	pd-vbus-upper-bound = <9000000>;
+};
+
+#if 0
+
+&connfem {
+/* Enable epa_elna node to support Wifi & BT ePA/eLNA FEM on customer load */
+#if 0
+	epa-elna {
+		parts = <&wlan7207h &wlan7207c>;
+		wifi {
+			flags-0 {
+				open-loop;
+			};
+		};
+		bt {
+			flags-0 {
+				/* choose one of: epa-elna/epa/elna/bypass */
+				epa-elna;
+			};
+		};
+	};
+#endif
+};
+
+/* GPS GPIO standardization start */
+&pio {
+	gps_pins_default: gps-default {
+	};
+	gps_l1_lna_pins_ol: gps-l1-lna0 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO33__FUNC_GPIO33>;
+			output-low;
+		};
+	};
+	gps_l1_lna_pins_dsp_ctrl: gps-l1-lna1 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO33__FUNC_GPS_L1_ELNA_EN>;
+		};
+	};
+	gps_l1_lna_pins_oh: gps-l1-lna2 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO33__FUNC_GPIO33>;
+			output-high;
+		};
+	};
+	/* gps_l5_lna_pins_ol: gps-l5-lna0 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO144__FUNC_GPIO144>;
+			output-low;
+		};
+	};
+	gps_l5_lna_pins_dsp_ctrl: gps-l5-lna1 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO144__FUNC_GPS_L5_ELNA_EN>;
+		};
+	};
+	gps_l5_lna_pins_oh: gps-l5-lna2 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO144__FUNC_GPIO144>;
+			output-high;
+		};
+	}; */
+};
+&gps {
+	pinctrl-names = "default",
+		"gps_l1_lna_disable",
+		"gps_l1_lna_dsp_ctrl",
+		"gps_l1_lna_enable";
+		/* "gps_l5_lna_disable",
+		"gps_l5_lna_dsp_ctrl",
+		"gps_l5_lna_enable"; */
+	pinctrl-0 = <&gps_pins_default>;
+	pinctrl-1 = <&gps_l1_lna_pins_ol>;
+	pinctrl-2 = <&gps_l1_lna_pins_dsp_ctrl>;
+	pinctrl-3 = <&gps_l1_lna_pins_oh>;
+	/* pinctrl-4 = <&gps_l5_lna_pins_ol>;
+	pinctrl-5 = <&gps_l5_lna_pins_dsp_ctrl>;
+	pinctrl-6 = <&gps_l5_lna_pins_oh>; */
+	status = "okay";
+};
+/* GPS GPIO standardization end */
+
+#endif
+
+&i2c6 {
+	spk: speaker-amp@5c {
+		compatible = "richtek,rt5512";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		#sound-dai-cells = <0>;
+		reg = <0x5c>;
+		status = "okay";
+		sound-name-prefix = "Left";
+	};
+};
+
+&sound {
+	mediatek,spk-i2s = <25 24>;
+	mediatek,speaker-codec {
+		sound-dai = <&spk>;
+	};
+};
+
+
+
+&mtkfb {
+	pinctrl-names = "lcd_bias_enp1_gpio", "lcd_bias_enp0_gpio",
+		"lcd_bias_enn1_gpio", "lcd_bias_enn0_gpio",
+		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
+		"mode_te_te", "lcm_led_en1_gpio", "lcm_led_en0_gpio";
+	pinctrl-0 = <&mtkfb_pins_lcd_bias_enp1>;
+	pinctrl-1 = <&mtkfb_pins_lcd_bias_enp0>;
+	pinctrl-2 = <&mtkfb_pins_lcd_bias_enn1>;
+	pinctrl-3 = <&mtkfb_pins_lcd_bias_enn0>;
+	pinctrl-4 = <&mtkfb_pins_lcm_rst_out1_gpio>;
+	pinctrl-5 = <&mtkfb_pins_lcm_rst_out0_gpio>;
+	pinctrl-6 = <&mtkfb_pins_lcm_dsi_te>;
+	pinctrl-7 = <&mtkfb_pins_lcm_led_en1>;
+	pinctrl-8 = <&mtkfb_pins_lcm_led_en0>;
+
+	status = "okay";
+};
+
+&oplus_secure_common {
+    compatible = "oplus,secure_common";
+    oplus,sec_reg_num = <0>;
+    oplus,sec_en_anti_reg = <0>;
+    oplus,sec_override1_reg = <0>;
+    oplus,override1_en_value = <0>;
+};
+
+&odm {
+/* Add for sim detect */
+    oplus_sim_detect {
+        compatible = "oplus, sim_detect";
+        Hw,sim_det = <&pio 46 0x00>;
+    };
+};
+
+&pio {
+	mtkfb_pins_lcd_bias_enp1: lcd-bias-enp1-gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO149__FUNC_GPIO149>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enp0: lcd-bias-enp0-gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO149__FUNC_GPIO149>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enn1: lcd-bias-enn1-gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO149__FUNC_GPIO149>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enn0: lcd-bias-enn0-gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO149__FUNC_GPIO149>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcm_rst_out1_gpio: lcm-rst-out1-gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO90__FUNC_GPIO90>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcm_rst_out0_gpio: lcm-rst-out0-gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO90__FUNC_GPIO90>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	mtkfb_pins_lcm_dsi_te: lcm-dsi-te {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO89__FUNC_DSI_TE>;
+		};
+	};
+
+	mtkfb_pins_lcm_led_en1: lcm-led-en1-gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO149__FUNC_GPIO149>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcm_led_en0: lcm-led-en0-gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO149__FUNC_GPIO149>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+
+&dispsys_config {
+	pinctrl-names = "mode_te_te";
+	pinctrl-0 = <&mtkfb_pins_lcm_dsi_te>;
+	status = "okay";
+};
+
+&dsi0 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	panel3@2 {
+		compatible = "ac158,p,7,a0001,cmd";
+		reg = <0>;
+		vddr-enable-gpios = <&pio 3 0>;
+		reset-gpios = <&pio 90 0>;
+		vci-supply = <&wl28681c1_ldo7a>;
+		oplus,panel-max-brightness=<4094>;
+		oplus,dsi-serial-number-enabled=<1>;
+		oplus,dsi-serial-number-index= <0>;
+		oplus,dsi-serial-number-reg= <0xA3>;
+		oplus,dsi-serial-number-read-count= <7>;
+		oplus_bl_demura_dbv_support = <1>;
+		demura_dbv_cfg1 = <502>;
+		demura_dbv_cfg2 = <1010>;
+		demura_dbv_cfg3 = <1378>;
+		demura_dbv_cfg4 = <3515>;
+		pinctrl-names = "default";
+		oplus,ofp-fp-type = <0x08>;
+		port {
+			panel_in1: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
+	panel4@3 {
+		compatible = "ac158,p,b,a0012,cmd";
+		reg = <1>;
+		vddr-enable-gpios = <&pio 3 0>;
+		reset-gpios = <&pio 90 0>;
+		vci-supply = <&wl28681c1_ldo7a>;
+		oplus,panel-max-brightness=<4094>;
+		oplus,dsi-serial-number-enabled=<1>;
+		oplus,dsi-serial-number-switch-page;
+		oplus,dsi-serial-number-index= <0>;
+		oplus,dsi-serial-number-switch-page-command= <0xFF 0x78 0x38 0x0F>;
+		oplus,dsi-serial-number-default-switch-page-command= <0xFF 0x78 0x38 0x00>;
+		oplus,dsi-serial-number-reg= <0xA3>;
+		oplus,dsi-serial-number-read-count= <7>;
+		pinctrl-names = "default";
+		oplus,ofp-fp-type = <0x08>;
+		port {
+			panel_in2: endpoint {
+				remote-endpoint = <&dsi_out2>;
+			};
+		};
+	};
+	ports {
+		port {
+			dsi_out: endpoint {
+				remote-endpoint = <&panel_in1>;
+			};
+			dsi_out2: endpoint@2 {
+				remote-endpoint = <&panel_in2>;
+			};
+		};
+	};
+};
+
+&odm {
+    /*OPLUS_FEATURE_OEM_OCDT oppo project start */
+	oplus_project:oplus_project {
+		compatible = "oplus,oplus_project";
+	};
+    
+    oplus_boardid:oplus_boardid {
+		compatible = "oplus,oplus_boardid-v2";
+		support-dtsino=<23261>;//only one u32
+		/*first one is low 32bit, last one is highest 32bit, must be 32-bit for 4gpios*/
+		support-pcbmask=<0xffffffff 0xffffffff 0xffffffff>;
+	};
+	pmic_history_count:pmic_history_count {
+	};
+	pmic_history0:pmic_history0 {
+	};
+	pmic_history1:pmic_history1 {
+	};
+	pmic_history2:pmic_history2 {
+	};
+	pmic_history3:pmic_history3 {
+	};
+};
+
+//Network RF add SWTP
+&pio {
+	//#ifdef OPLUS_VENDOR_SWTP
+	swtp: swtp {
+		compatible = "mediatek, swtp-eint";
+	};
+	//#endif  /*OPLUS_VENDOR_SWTP*/
+};
+
+/*
+ * Trustonic Mobilecore real driver
+ */
+&mobicore{
+        trustonic,real-drv = <1>;
+};
+
+//#ifdef OPLUS_FEATURE_STORAGE
+&mmc1_pins_default {
+	pins-clk {
+		drive-strength = <7>;
+	};
+};
+&mmc1_pins_uhs {
+	pins-clk {
+		drive-strength = <7>;
+	};
+};
+//#endif /*OPLUS_FEATURE_STORAGE*/
+
+#include <oplus6878_23261/cust.dtsi>
+#include "mediatek/cust_mt6878_omegas3_camera_v4l2.dtsi"
+#include "mediatek/cust_k6878_connfem.dtsi"
+#include "mediatek/cust_mt6878_23261_audio.dtsi"
+#include "mediatek/oplus_tp_23261.dtsi"
+/*End of this file, DO NOT ADD ANYTHING HERE*/

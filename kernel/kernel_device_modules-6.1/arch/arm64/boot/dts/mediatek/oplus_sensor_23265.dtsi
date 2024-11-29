@@ -1,0 +1,268 @@
+&odm {
+	sensor_fb: sensor_fb {
+		compatible = "oplus,sensor-feedback";
+	};
+	consumer_ir_core: consumer_ir_core {
+		compatible = "oplus,kookong_ir_core";
+		status = "okay";
+		vdd-type = <2>;  /*0: internal LDO , 1: external LDO , 2: NO VDD */
+	};
+	consumerIr: consumerIr {
+		compatible = "oplus,kookong_ir_pwm";
+		status = "okay";
+		pwm-num = <3>;
+		pwm-dma-mask = <64>;
+	};
+	ssc_interactive: ssc_interactive {
+		report_brightness = <1>;
+		support_pwm_turbo = <1>;
+		support_bri_to_scp = <1>;
+		need_to_sync_lcd_rate = <0>;
+		report_blank_mode = <1>;
+	};
+	oplus_sensor:oplus_sensor {
+		compatible = "oplus,sensor-devinfo";
+		als-row-coe = <1000>;
+		/* sensor start */
+		/*
+		enum {
+			LIS3DH,
+			LSM6DS3,
+			BMI160,
+			LIS2HH12,
+			LSM6DSM,
+			BMI2XY,
+			LSM6DSO,
+			ICM4X6XX,
+			ICM4263X,
+			ICM4N607,
+			BMI22X,
+			SC7A20,
+			MC34X9,
+		};
+		*/
+		gsensor_1: gsensor_1 {
+			status = "okay";
+			sensor_name = <5>;//BMI2XY
+			device_name = "bmi2xy";
+			i2c_num = <2>;
+			direction = <6>;
+			eint_num = <16>;
+			gyro_cali_version= <2>;
+			gyro_cali_range =<350>;
+			acc_cali_range= <300 300 300>;
+			sup_range_change = <1>;
+		};
+
+		/*
+		enum {
+			AKM09911,
+			MMC3530,
+			MMC5603,
+			MXG4300,
+			AKM09918,
+		};
+		*/
+		msensor_1: msensor_1 {
+			status = "okay";
+			sensor_name = <2>;//MMC5603
+			i2c_num = <0>;
+			i2c_addr = <0x30>;
+			direction = <0>;
+			eint_num = <0>;
+			soft-mag-parameter = <9983 0 521 0 245 0 605 0 10086 0 209 0 259 0 71 0 10992 0>;
+		};
+		/*
+		enum {
+			TMD2725,
+			APSD9922,
+			STK3335,
+			STK3331,
+			STK2232,
+			TCS3701,
+			STK32600,
+			STK33502,
+			MN78911,
+			TCS3720,
+			SIP3515,
+			STK3329,
+			LTR569,
+			SIP3510,
+			SIP3625,
+		};
+		*/
+		proximity_1: proximity_1 {
+			status = "okay";
+			sensor_name = <9>; // TCS3720
+			device_name = "tcs3720";
+			i2c_num = <5>;
+			i2c_addr = <0x39>;
+			direction = <0>;
+			eint_num = <10>;
+			low_step = <300>;
+			high_step = <400>;
+			low_limit = <400>;
+			high_limit = <600>;
+			dirty_low_step = <180>;
+			dirty_high_step = <280>;
+			ps_dirty_limit = <1800>;
+			ps_ir_limit = <500>;
+			ps_adjust_min = <0>;
+			ps_adjust_max = <800>;
+			sampling_count = <5>;
+			step_max = <400>;
+			step_min = <100>;
+			step_div = <2000>;
+			anti_shake_delta = <120>;
+			dynamic_cali_max = <3000>;
+			raw2offset_radio = <1000>;
+			offset_max = <15000>;
+			offset_range_min = <0>;
+			offset_range_max = <65534>;
+			force_cali_limit = <0>;
+			cali_jitter_limit = <40>;
+			cal_offset_margin = <3000>;
+			60hz_psd_us = <5700>;
+			90hz_psd_us = <5700>;
+			120hz_psd_us = <5700>;
+			ps_check_num = <2>;
+			ps_mid_filter = <0>;
+			need_to_sync_lcd_rate = <0>;
+		};
+		light_1: light_1 {
+			status = "okay";
+			sensor_name = <9>; // TCS3720
+			i2c_num = <5>;
+			i2c_addr = <0x39>;
+			direction = <0>;
+			eint_num = <10>;
+			als_ratio = <110>;
+			cct_type = <0x02>; //0x01 CCT_NORMAL 0x02 CCT_WISE
+			device_name = "tcs3720";
+			gold_cct_3k = <3415 1580 797 5369 1001 1001>;
+			gold_cct_6k = <2209 1703 969 4576 1001 1001>;
+			sup_changing_rpt = <0>;
+			lb_bri_max = <4096>;
+			ir_ratio = <8>; // *1000
+			als_delay = <390>;
+			decision_table_index = <2>;
+			available_sensor = <14>;
+			gold_cct_factor = <941 946 924 966 1001 1001>;
+			high_pwm_cct = <1>;
+			als_timer_ms = <50>;
+			als_buffer_length = <4>;
+			need_gain_cali = <0>;
+		};
+
+		proximity_2: proximity_2 {
+			status = "okay";
+			sensor_name = <14>; // SIP3625
+			device_name = "sip3625";
+			i2c_num = <5>;
+			i2c_addr = <0x5B>;
+			direction = <0>;
+			eint_num = <10>;
+			low_step = <300>;
+			high_step = <500>;
+			low_limit = <500>;
+			high_limit = <520>;
+			dirty_low_step = <180>;
+			dirty_high_step = <280>;
+			ps_dirty_limit = <1800>;
+			ps_ir_limit = <500>;
+			ps_adjust_min = <300>;
+			ps_adjust_max = <800>;
+			sampling_count = <5>;
+			step_max = <400>;
+			step_min = <100>;
+			step_div = <2000>;
+			anti_shake_delta = <120>;
+			dynamic_cali_max = <1400>;
+			raw2offset_radio = <5000>;
+			offset_max = <15000>;
+			offset_range_min = <0>;
+			offset_range_max = <65534>;
+			force_cali_limit = <310>;
+			cali_jitter_limit = <70>;
+			cal_offset_margin = <3000>;
+			60hz_psd_us = <5700>;
+			90hz_psd_us = <5700>;
+			120hz_psd_us = <5700>;
+			ps_check_num = <3>;
+			ps_mid_filter = <0>;
+			need_to_sync_lcd_rate = <0>;
+			ps_power_config = <2>;
+			dmc_flt_thr = <100>;
+			multi_oft_level = <3>;
+			multi_oft_coef = <130 26 1>;
+		};
+		light_2: light_2 {
+			status = "okay";
+			sensor_name = <14>;//SIP3625
+			i2c_num = <5>;
+			i2c_addr = <0x5B>;
+			direction = <0>;
+			eint_num = <10>;
+			als_ratio = <110>;
+			cct_type = <0x02>; //0x01 CCT_NORMAL 0x02 CCT_WISE
+			device_name = "sip3625";
+			gold_cct_3k = <1853 1444 841 7898 1001 1001>;
+			gold_cct_6k = <1677 1470 1058 6390 1001 1001>;
+			sup_changing_rpt = <0>;
+			lb_bri_max = <4096>;
+			ir_ratio = <8>; // *1000
+			als_delay = <390>;
+			decision_table_index = <2>;
+			available_sensor = <14>;
+			gold_cct_factor = <941 946 924 966 1001 1001>;
+			high_pwm_cct = <1>;
+			als_timer_ms = <100>;
+			als_buffer_length = <2>;
+			atime = <8330>;
+			need_gain_cali = <0>;
+		};
+
+		pick_up: pick_up {
+			status = "okay";
+			use-proximity = <1>;
+		};
+		lux_aod: lux_aod {
+			status = "okay";
+			use-proximity = <1>;
+		};
+		alsps_arch: alsps_arch {
+			status = "okay";
+			new-arch-supported = <1>;
+		};
+		cali_arch: cali_arch {
+			status = "okay";
+			new-arch-supported = <1>;
+		};
+		oplus_fusion: oplus_fusion {
+			status = "okay";
+			use_sub_accgyro = <0>;
+		};
+		smart_prox: smart_prox {
+			status = "okay";
+			support_smart_prox = <1>;
+		};
+		ap_timer: ap_timer {
+			status = "okay";
+			support_ap_timer = <1>;
+		};
+		lay_detect: lay_detect{
+			status = "okay";
+			max_angel = <90>;
+			min_angel = <30>;
+			lay_in_time = <10>;
+			lay_out_time = <3>;
+		};
+	};
+/* sensor end */
+};
+
+&mt6369_vfp {
+	regulator-always-on;
+        regulator-min-microvolt = <3300000>;
+        regulator-max-microvolt = <3300000>;
+};

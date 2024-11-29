@@ -1,0 +1,69 @@
+/* SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (C) 2021 MediaTek Inc.
+ */
+
+/* wl2866d */
+/*
+&pio {
+	wl2866d_default: state_default_a {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO1__FUNC_GPIO1>;
+		};
+	};
+	// GPIO01 pull up to enable wl2866d supply
+	wl2866d_reset_high: state_reset_high_a {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO1__FUNC_GPIO1>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	wl2866d_reset_low: state_reset_low_a {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO1__FUNC_GPIO1>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+*/
+&i2c4 {
+	clock-frequency = <400000>;
+	wl2866d@50 {
+		compatible = "wl2866d-pmic";
+		reg = <0x28>;
+		/*
+		pinctrl-names = "default", "reset_high", "reset_low";
+		pinctrl-0 = <&wl2866d_default>;
+		pinctrl-1 = <&wl2866d_reset_high>;
+		pinctrl-2 = <&wl2866d_reset_low>;
+		*/
+		regulators {
+			//main dvdd1 1.1
+			wl2866d_ldo1a:ONLDO1 {
+				regulator-name = "wl2866d_ldo1a";
+				regulator-min-microvolt = <600000>;
+				regulator-max-microvolt = <2130000>;
+			};
+			//front dvdd2 1.1
+			wl2866d_ldo2a:ONLDO2 {
+				regulator-name = "wl2866d_ldo2a";
+				regulator-min-microvolt = <600000>;
+				regulator-max-microvolt = <2130000>;
+			};
+			//main avdd1 2.8
+			wl2866d_ldo3a:ONLDO3 {
+				regulator-name = "wl2866d_ldo3a";
+				regulator-min-microvolt = <1200000>;
+				regulator-max-microvolt = <4387500>;
+			};
+			//front avdd2 2.8
+			wl2866d_ldo4a:ONLDO4 {
+				regulator-name = "wl2866d_ldo4a";
+				regulator-min-microvolt = <1200000>;
+				regulator-max-microvolt = <4387500>;
+			};
+		};
+	};
+};

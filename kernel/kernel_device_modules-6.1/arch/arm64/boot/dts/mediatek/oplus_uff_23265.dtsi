@@ -1,0 +1,92 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+* Copyright (C) 2021-2025 Oplus. All rights reserved.
+*/
+#include <dt-bindings/pinctrl/mt6878-pinfunc.h>
+
+/* UFF dts config at 2023.5.19
+ *
+ * fp vendor:
+ *   jiiov: JV0301(from pre-T1)
+ *   goodix: G7s(before pre-T1)
+ */
+
+/* FINGERPRINT start */
+&spi1 {
+#address-cells = <1>;
+#size-cells = <0>;
+status = "okay";
+oplus_fp: fingerprint@0 {
+		compatible = "oplus,fp_spi";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		spi-id = <1>;
+		spi-reg = <11011000>;
+		uff,gpio_reset = <&pio 30 0x00>;
+		uff,gpio_cs = <&pio 61 0x00>;
+		pinctrl-names = "default", "fp_spi_driver", "fp_cs_func";
+		pinctrl-0 = <&gpio_uff_reset_default>, <&gpio_uff_cs_default>;
+		pinctrl-1 = <&gpio_uff_clk_6mA>, <&gpio_uff_mosi_6mA>, <&gpio_uff_miso_6mA>, <&gpio_uff_cs_6mA>;
+		pinctrl-2 = <&gpio_uff_cs_func>;
+                optical_irq_disable_flag = <1>;
+		dvdd-supply = <&mt6369_vfp>;
+		dvdd-config = <3300000 3300000 150000>;
+		power-num = <1>;
+		status = "okay";
+		power_source_1 {
+			power-mode = <1>;
+			power-name = "dvdd";
+			power-config = "dvdd-config";
+			delay-time = <0>;
+		};
+	};
+};
+
+&pio{
+gpio_uff_reset_default: gpio_uff_reset_default {
+				pins_cmd_dat {
+					pinmux = <PINMUX_GPIO30__FUNC_GPIO30>;
+					slew-rate = <1>;
+					output-low;
+				};
+			};
+gpio_uff_cs_default: gpio_uff_cs_default {
+				pins_cmd_dat {
+					pinmux = <PINMUX_GPIO61__FUNC_GPIO61>;
+					slew-rate = <1>;
+					bias-disable;
+					output-low;
+				};
+			};
+gpio_uff_clk_6mA: gpio_uff_clk_6mA {
+				pins_cmd_dat {
+					pinmux = <PINMUX_GPIO60__FUNC_SPI1_CLK>;
+					drive-strength = <2>;
+				};
+			};
+gpio_uff_mosi_6mA: gpio_uff_mosi_6mA {
+				pins_cmd_dat {
+					pinmux = <PINMUX_GPIO62__FUNC_SPI1_MO>;
+					drive-strength = <2>;
+				};
+			};
+gpio_uff_miso_6mA: gpio_uff_miso_6mA {
+				pins_cmd_dat {
+					pinmux = <PINMUX_GPIO63__FUNC_SPI1_MI>;
+					drive-strength = <2>;
+				};
+			};
+gpio_uff_cs_6mA: gpio_uff_cs_6mA {
+				pins_cmd_dat {
+					pinmux = <PINMUX_GPIO61__FUNC_SPI1_CSB>;
+					drive-strength = <2>;
+				};
+			};
+gpio_uff_cs_func: gpio_uff_cs_func {
+					pins_cmd_dat {
+					pinmux = <PINMUX_GPIO61__FUNC_SPI1_CSB>;
+					drive-strength = <2>;
+				};
+			};
+};
+/* FINGERPRINT end */

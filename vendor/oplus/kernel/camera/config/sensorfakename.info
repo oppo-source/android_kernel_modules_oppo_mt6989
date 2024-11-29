@@ -1,0 +1,60 @@
+#project    hardware_name     fake_name     des
+Nvwa_22113   IMX966           nvwamain      main cam
+Nvwa_22113   S5KJN1           nvwauwide     ultra wide cam
+Nvwa_22113   OV64B            nvwatele      tele cam
+Nvwa_22113   IMX709           nvwafront     front cam
+Nvwa_22113   IMX890           nvwasun2      main pre cam
+Nvwa_22113   IMX890           nvwaearth     tele pre cam
+Nvwa_22113   IMX882           nvwamars      ultra wide pre cam
+Nvwa_22113   IMX581           nvwamars2     ultra wide pre cam
+
+OmegaS2_23265   IMX882           omegas2main      main cam
+OmegaS2_23265   IMX355           omegas2wide      ultra wide cam
+OmegaS2_23265   S5KJN5           omegas2tele      tele cam
+OmegaS2_23265   S5KJN5           omegas2front     front cam
+
+OmegaS3_23261   IMX882           omegas3main      main cam
+OmegaS3_23261   IMX355           omegas3wide      ultra wide cam
+//OmegaS3_23261   OV02B10          omegas3macro     macro cam
+OmegaS3_23261   S5KJN5           omegas3front     front cam
+
+Casio_24678     IMX882           casiomain        main cam
+Casio_24678     SC202CS          casiomono        mono cam
+Casio_24678     S5K3P9           casiofront       front cam
+Casio_24678     IMX355           casiowide        ultra wide cam
+Casio_24678     OV50D40          casiomain2       main2 cam
+
+AlphaH_24051    OV50D40          alphahmain       main cam
+AlphaH_24051    IMX471           alphahfront      front cam
+AlphaH_24051    GC02M1B          alphahmono       mono cam
+
+MilkywayC1_24021   IMX890           milkywayc1main      main cam
+MilkywayC1_24021   OV08D            milkywayc1wide      ultra wide cam
+MilkywayC1_24021   S5KJN5           milkywayc1tele      tele cam
+MilkywayC1_24021   S5KJN5           milkywayc1front     front cam
+
+MilkywayC2_24023   IMX882           milkywayc2main      main cam
+MilkywayC2_24023   OV08D            milkywayc2wide      ultra wide cam
+MilkywayC2_24023   S5KJN5           milkywayc2front     front cam
+
+MilkywayS1_24021   IMX890           milkyways1main      main cam
+MilkywayS1_24021   OV08D            milkyways1wide      ultra wide cam
+MilkywayS1_24021   S5KJN5           milkyways1tele      tele cam
+MilkywayS1_24021   S5KJN5           milkyways1front     front cam
+
+Milkyways2_24222   IMX882           milkyways2main      main cam
+Milkyways2_24222   OV08D            milkyways2wide      ultra wide cam
+MilkywayS2_24222   OV02B1B          milkyways2mono      mono cam
+Milkyways2_24222   S5KJN5           milkyways2front     front cam
+
+Casiox_24706   IMX882           casioxmain      main cam
+Casiox_24706   GC32E2           casioxfront     front cam
+Casiox_24706   IMX355           casioxwide      wide cam
+CaymanA_24610   IMX882         caymanamain   main cam
+CaymanA_24610   OV08D          caymanauwide   ultra wide cam
+CaymanA_24610   IMX471         caymanafront   front cam
+
+CaymanB_24708   IMX896         caymanbmain   main cam
+CaymanB_24708   S5KJN5         caymanbtele   tele cam
+CaymanB_24708   OV08D          caymanbuwide  ultra wide cam
+CaymanB_24708   IMX471         caymanbfront  front cam

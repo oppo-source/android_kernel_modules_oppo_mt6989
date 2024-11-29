@@ -1,0 +1,79 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2020 MediaTek Inc. */
+
+&i2c9 {
+	clock-frequency = <400000>;
+
+	dio4483: dio4483@42 {
+		compatible = "oplus,typec-switch-i2c";
+		reg = <0x42>;
+		// add for supporting type-c headphone detect bypass
+		oplus,hp-bypass = <1>;
+		status = "okay";
+	};
+
+	sia81xx_i2c_L: sia81xx_i2c@29 {
+		compatible = "si,sia81xx-i2c";
+		reg = <0x29>;
+		si,sipa-dev = <&si_pa_L>;
+		status = "okay";
+	};
+
+	sia81xx_i2c_R: sia81xx_i2c@28 {
+		compatible = "si,sia81xx-i2c";
+		reg = <0x28>;
+		si,sipa-dev = <&si_pa_R>;
+		status = "okay";
+	};
+};
+
+&pio {
+	sia81xx_gpio_L: sia81xx_gpio_L {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO149__FUNC_GPIO149>;
+			slew-rate = <1>;
+			bias-disable;
+		};
+	};
+
+	sia81xx_gpio_R: sia81xx_gpio_R {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
+			slew-rate = <1>;
+			bias-disable;
+		};
+	};
+};
+
+&si_pa_L {
+	compatible = "si,sia81xx";
+	si,si_pa_type = "sia81x9";
+	si,si_pa_reset = <&pio 149 0>;
+	pinctrl-names = "si_pa_gpio";
+	pinctrl-0 = <&sia81xx_gpio_L>;
+	si,si_pa_disable_pin = <0>;
+	channel_num = <0>;
+};
+
+&si_pa_R {
+	compatible = "si,sia81xx";
+	si,si_pa_type = "sia81x9";
+	si,si_pa_reset = <&pio 152 0>;
+	pinctrl-names = "si_pa_gpio";
+	pinctrl-0 = <&sia81xx_gpio_R>;
+	si,si_pa_disable_pin = <0>;
+	channel_num = <1>;
+};
+
+&sound {
+	si,sia81xx-max-num = <2>;
+	si,sia81xx-aux-devs = <&si_pa_L>, <&si_pa_R>;
+	si,sia81xx-aux-devs-prefix = "SpkrLeft", "SpkrRight";
+	si,is_analog_pa = <1>;
+	oplus,special-pa-dapm = <1>;
+};
+
+// add for supporting type-c headphone detect bypass
+&accdet {
+	headset-eint0-disable = <1>;
+};

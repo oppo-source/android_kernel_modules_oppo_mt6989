@@ -1,0 +1,181 @@
+&odm {
+	sensor_fb: sensor_fb {
+		compatible = "oplus,sensor-feedback";
+	};
+	consumer_ir_core: consumer_ir_core {
+		compatible = "oplus,kookong_ir_core";
+		status = "okay";
+		vdd-type = <2>;  /*0: internal LDO , 1: external LDO , 2: NO VDD */
+	};
+	consumerIr: consumerIr {
+		compatible = "oplus,kookong_ir_pwm";
+		status = "okay";
+		pwm-num = <3>;
+		pwm-dma-mask = <64>;
+	};
+	ssc_interactive: ssc_interactive {
+		report_brightness = <1>;
+		support_pwm_turbo = <1>;
+		support_bri_to_scp = <1>;
+		need_to_sync_lcd_rate = <0>;
+		report_blank_mode = <1>;
+	};
+	oplus_sensor:oplus_sensor {
+		compatible = "oplus,sensor-devinfo";
+		als-row-coe = <1000>;
+		/* sensor start */
+		/*
+		enum {
+			LIS3DH,
+			LSM6DS3,
+			BMI160,
+			LIS2HH12,
+			LSM6DSM,
+			BMI2XY,
+			LSM6DSO,
+			ICM4X6XX,
+			ICM4263X,
+			ICM4N607,
+			BMI22X,
+			SC7A20,
+			MC34X9,
+		};
+		*/
+		gsensor_1: gsensor_1 {
+			status = "okay";
+			sensor_name = <16>; // ICM456XY
+			device_name = "icm456xy";
+			i2c_num = <2>;
+			direction = <6>;
+			eint_num = <16>;
+			gyro_cali_version= <2>;
+			gyro_cali_range =<350>;
+			acc_cali_range= <300 300 300>;
+			sup_range_change = <1>;
+		};
+
+		/*
+		enum {
+			AKM09911,
+			MMC3530,
+			MMC5603,
+			MXG4300,
+			AKM09918,
+		};
+		*/
+		msensor_1: msensor_1 {
+			status = "okay";
+			sensor_name = <2>; // MMC5603
+			i2c_num = <0>;
+			i2c_addr = <0x30>;
+			direction = <3>;
+			eint_num = <0>;
+			soft-mag-parameter = <9983 0 521 0 245 0 605 0 10086 0 209 0 259 0 71 0 10992 0>;
+		};
+		/*
+		enum {
+			TMD2725,
+			APSD9922,
+			STK3335,
+			STK3331,
+			STK2232,
+			TCS3701,
+			STK32600,
+			STK33502,
+			MN78911,
+			TCS3720,
+			SIP3515,
+			STK3329,
+			LTR569,
+			SIP3510,
+			SIP3625,
+		};
+		*/
+		proximity_1: proximity_1 {
+			status = "okay";
+			sensor_name = <15>; // STK33C01
+			i2c_num = <5>;
+			i2c_addr = <0x48>;
+			direction = <0>;
+			low_step = <300>;
+			high_step = <400>;
+			low_limit = <400>;
+			high_limit = <450>;
+			dirty_low_step = <180>;
+			dirty_high_step = <280>;
+			ps_dirty_limit = <1800>;
+			ps_ir_limit = <500>;
+			ps_adjust_min = <0>;
+			ps_adjust_max = <800>;
+			sampling_count = <5>;
+			step_max = <400>;
+			step_min = <100>;
+			step_div = <2000>;
+			anti_shake_delta = <120>;
+			dynamic_cali_max = <3000>;
+			raw2offset_radio = <1000>;
+			offset_max = <15000>;
+			offset_range_min = <0>;
+			offset_range_max = <65534>;
+			force_cali_limit = <2000>;
+			cali_jitter_limit = <40>;
+			cal_offset_margin = <3000>;
+			sensor-reg = <0x01 0x45 0x03 0x50 0x05 0x3A>;
+		};
+		light_1: light_1 {
+			status = "okay";
+			sensor_name = <15>; // STK33C01
+			i2c_num = <5>;
+			i2c_addr = <0x48>;
+			direction = <0>;
+			als_buffer_length =<8>;
+			als_ratio = <125>;
+			als_type = <0x02>; //0x01 CCT_NORMAL 0x02 CCT_WISE
+			device_name = "stk33c01";
+			als_coef_ratio = <88>;
+		};
+
+		pick_up: pick_up {
+			status = "okay";
+			use-proximity = <1>;
+		};
+		lux_aod: lux_aod {
+			status = "okay";
+			use-proximity = <1>;
+		};
+		alsps_arch: alsps_arch {
+			status = "okay";
+			new-arch-supported = <1>;
+		};
+		cali_arch: cali_arch {
+			status = "okay";
+			new-arch-supported = <1>;
+		};
+		oplus_fusion: oplus_fusion {
+			status = "okay";
+			use_sub_accgyro = <0>;
+		};
+		smart_prox: smart_prox {
+			status = "okay";
+			support_smart_prox = <1>;
+		};
+		ap_timer: ap_timer {
+			status = "okay";
+			support_ap_timer = <1>;
+		};
+		lay_detect: lay_detect{
+			status = "okay";
+			max_angel = <90>;
+			min_angel = <30>;
+			lay_in_time = <10>;
+			lay_out_time = <3>;
+		};
+	};
+/* sensor end */
+};
+
+&mt6369_vfp {
+	regulator-always-on;
+        regulator-min-microvolt = <3300000>;
+        regulator-max-microvolt = <3300000>;
+};

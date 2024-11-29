@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2020 MediaTek Inc.
+ */
+&connfem {
+	epa-elna {
+		parts = <&vc536411 &nofem>;		/* [7]Vanchip eFEM - Closed-Loop */
+
+		wifi {
+			flags-0 {
+				/* open-loop; */
+			};
+		};
+
+		bt {
+			flags-0 {
+				/* choose one of: epa-elna / epa / elna / bypass */
+				epa-elna;
+			};
+		};
+	};
+};
+
+&consys {
+	vcn33-always-on = <1>;
+};

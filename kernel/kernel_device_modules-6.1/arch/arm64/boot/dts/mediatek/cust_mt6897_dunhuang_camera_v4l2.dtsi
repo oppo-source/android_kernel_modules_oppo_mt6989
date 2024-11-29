@@ -1,0 +1,381 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+* Copyright (C) 2024 Oplus. All rights reserved.
+*/
+
+#include <dt-bindings/clock/mt6897-clk.h>
+
+&seninf_top {
+    seninf_csi_port_0: seninf-csi-port-0 {
+        compatible = "mediatek,seninf";
+        csi-port = "0";
+        port {
+            seninf_csi_port_0_in: endpoint {
+                remote-endpoint = <&sensor1_out>;
+            };
+        };
+    };
+   seninf_csi_port_2: seninf-csi-port-2 {
+        compatible = "mediatek,seninf";
+        csi-port = "2";
+        port {
+            seninf_csi_port_2_in: endpoint {
+                remote-endpoint = <&sensor0_out>;
+            };
+        };
+    };
+};
+
+&mtk_composite_v4l2_2 {
+    port@0 {
+        main_af_endpoint: endpoint {
+            remote-endpoint = <&main_af>;
+        };
+    };
+};
+
+&pio {
+    camera_pins_cam0_mclk_off: camera-pins-cam0-mclk-off {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO124__FUNC_GPIO124>;
+            drive-strength = <1>;
+        };
+    };
+    camera_pins_cam0_mclk_2ma: camera-pins-cam0-mclk-2ma {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO124__FUNC_CMMCLK1>;
+            drive-strength = <0>;
+        };
+    };
+    camera_pins_cam0_mclk_4ma: camera-pins-cam0-mclk-4ma {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO124__FUNC_CMMCLK1>;
+            drive-strength = <1>;
+        };
+    };
+    camera_pins_cam0_mclk_6ma: camera-pins-cam0-mclk-6ma {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO124__FUNC_CMMCLK1>;
+            drive-strength = <2>;
+        };
+    };
+    camera_pins_cam0_mclk_8ma: camera-pins-cam0-mclk-8ma {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO124__FUNC_CMMCLK1>;
+            drive-strength = <3>;
+        };
+    };
+    camera_pins_cam0_rst_low: cam0@0 {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO116__FUNC_GPIO116>;
+            slew-rate = <1>;
+            output-low;
+        };
+    };
+    camera_pins_cam0_rst_high: cam0@1 {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO116__FUNC_GPIO116>;
+            slew-rate = <1>;
+            output-high;
+        };
+    };
+
+    camera_pins_cam0_dovdd_off: cam0@2 {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO125__FUNC_GPIO125>;
+            slew-rate = <1>;
+            output-low;
+        };
+    };
+    camera_pins_cam0_dovdd_on: cam0@3 {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO125__FUNC_GPIO125>;
+            slew-rate = <1>;
+            output-high;
+        };
+    };
+
+    camera_pins_cam1_mclk_off: camera-pins-cam1-mclk-off {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO126__FUNC_GPIO126>;
+            drive-strength = <1>;
+        };
+    };
+    camera_pins_cam1_mclk_2ma: camera-pins-cam1-mclk-2ma {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO126__FUNC_CMMCLK3>;
+            drive-strength = <0>;
+        };
+    };
+    camera_pins_cam1_mclk_4ma: camera-pins-cam1-mclk-4ma {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO126__FUNC_CMMCLK3>;
+            drive-strength = <1>;
+        };
+    };
+    camera_pins_cam1_mclk_6ma: camera-pins-cam1-mclk-6ma {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO126__FUNC_CMMCLK3>;
+            drive-strength = <2>;
+        };
+    };
+    camera_pins_cam1_mclk_8ma: camera-pins-cam1-mclk-8ma {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO126__FUNC_CMMCLK3>;
+            drive-strength = <3>;
+        };
+    };
+    camera_pins_cam1_rst_low: cam1@0 {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO118__FUNC_GPIO118>;
+            slew-rate = <1>;
+            output-low;
+        };
+    };
+    camera_pins_cam1_rst_high: cam1@1 {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO118__FUNC_GPIO118>;
+            slew-rate = <1>;
+            output-high;
+        };
+    };
+    camera_pins_cam1_avdd_off: cam1@2 {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO128__FUNC_GPIO128>;
+            slew-rate = <1>;
+            output-low;
+        };
+    };
+    camera_pins_cam1_avdd_on: cam1@3 {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO128__FUNC_GPIO128>;
+            slew-rate = <1>;
+            output-high;
+        };
+    };
+    camera_pins_cam1_dovdd_off: cam1@4 {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO125__FUNC_GPIO125>;
+            slew-rate = <1>;
+            output-low;
+        };
+    };
+    camera_pins_cam1_dovdd_on: cam1@5 {
+        pins-cmd-dat {
+            pinmux = <PINMUX_GPIO125__FUNC_GPIO125>;
+            slew-rate = <1>;
+            output-high;
+        };
+    };
+    camera_pins_default: camdefault {
+    };
+};
+
+/*modify AF Voltage to 2.8V*/
+&mt6368_vibr {
+    regulator-min-microvolt = <2800000>;
+    regulator-max-microvolt = <2800000>;
+};
+
+&i2c4 {
+    status = "okay";
+    clock-frequency = <400000>;
+    camera_af_main@18 {
+        compatible = "oplus,gt9779_24921";
+        reg = <0x18>;
+        vin-supply = <&mt6368_vibr>;
+        port {
+            main_af: endpoint {
+                remote-endpoint = <&main_af_endpoint>;
+            };
+        };
+    };
+    /* eeprom */
+    mtk_camera_eeprom0:camera-eeprom0@50 {
+        compatible = "mediatek,camera_eeprom";
+        reg = <0x50>;
+        status = "okay";
+    };
+    /* rear */
+    sensor0: sensor0@40 {
+        compatible = "mediatek,imgsensor";
+        sensor-names = "dunhuangmain_mipi_raw";
+        reg = <0x40>;
+        pinctrl-names = "mclk_off",
+                "mclk_2mA",
+                "mclk_4mA",
+                "mclk_6mA",
+                "mclk_8mA",
+                "rst_low",
+                "rst_high",
+                "dovdd_off",
+                "dovdd_on";
+        pinctrl-0 = <&camera_pins_cam0_mclk_off>;
+        pinctrl-1 = <&camera_pins_cam0_mclk_2ma>;
+        pinctrl-2 = <&camera_pins_cam0_mclk_4ma>;
+        pinctrl-3 = <&camera_pins_cam0_mclk_6ma>;
+        pinctrl-4 = <&camera_pins_cam0_mclk_8ma>;
+        pinctrl-5 = <&camera_pins_cam0_rst_low>;
+        pinctrl-6 = <&camera_pins_cam0_rst_high>;
+        pinctrl-7 = <&camera_pins_cam0_dovdd_off>;
+        pinctrl-8 = <&camera_pins_cam0_dovdd_on>;
+
+        avdd-supply = <&mt6368_vtp>; //MT6368_LDO_VSYS_VTP
+        afvdd-supply = <&mt6368_vibr>; //MT6368_LDO_VIBR
+        dvdd-supply = <&mt6368_vrf13_aif>;
+
+        clocks = <&topckgen_clk CLK_TOP_UNIVPLL_192M_D32>,
+            <&topckgen_clk CLK_TOP_UNIVPLL_192M_D16>,
+            <&topckgen_clk CLK_TOP_F26M_CK_D2>,
+            <&topckgen_clk CLK_TOP_UNIVPLL_192M_D10>,
+            <&topckgen_clk CLK_TOP_UNIVPLL_192M_D8>,
+            <&topckgen_clk CLK_TOP_UNIVPLL_D6_D16>,
+            <&topckgen_clk CLK_TOP_UNIVPLL_D6_D8>,
+            <&topckgen_clk CLK_TOP_CAMTG2_SEL>;
+        clock-names = "6", "12", "13", "19.2", "24", "26", "52", "mclk";
+
+        status = "okay";
+
+        port {
+            sensor0_out: endpoint {
+                remote-endpoint = <&seninf_csi_port_2_in>;
+            };
+        };
+    };
+};
+
+&i2c9 {
+    status = "okay";
+    clock-frequency = <400000>;
+    /* eeprom */
+    mtk_camera_eeprom1:camera-eeprom1@50 {
+        compatible = "mediatek,camera_eeprom";
+        reg = <0x50>;
+        status = "okay";
+    };
+    /* FRONT */
+    sensor1: sensor1@42 {
+        compatible = "mediatek,imgsensor";
+        sensor-names = "dunhuangfront_mipi_raw";
+        reg = <0x42>;
+        pinctrl-names = "mclk_off",
+                "mclk_2mA",
+                "mclk_4mA",
+                "mclk_6mA",
+                "mclk_8mA",
+                "rst_low",
+                "rst_high",
+                "avdd_off",
+                "avdd_on",
+                "dovdd_off",
+                "dovdd_on";
+        pinctrl-0 = <&camera_pins_cam1_mclk_off>;
+        pinctrl-1 = <&camera_pins_cam1_mclk_2ma>;
+        pinctrl-2 = <&camera_pins_cam1_mclk_4ma>;
+        pinctrl-3 = <&camera_pins_cam1_mclk_6ma>;
+        pinctrl-4 = <&camera_pins_cam1_mclk_8ma>;
+        pinctrl-5 = <&camera_pins_cam1_rst_low>;
+        pinctrl-6 = <&camera_pins_cam1_rst_high>;
+        pinctrl-7 = <&camera_pins_cam1_avdd_off>;
+        pinctrl-8 = <&camera_pins_cam1_avdd_on>;
+        pinctrl-9 = <&camera_pins_cam1_dovdd_off>;
+        pinctrl-10 = <&camera_pins_cam1_dovdd_on>;
+
+        dvdd-supply = <&mt6368_vrf13_aif>;
+
+        clocks = <&topckgen_clk CLK_TOP_UNIVPLL_192M_D32>,
+            <&topckgen_clk CLK_TOP_UNIVPLL_192M_D16>,
+            <&topckgen_clk CLK_TOP_F26M_CK_D2>,
+            <&topckgen_clk CLK_TOP_UNIVPLL_192M_D10>,
+            <&topckgen_clk CLK_TOP_UNIVPLL_192M_D8>,
+            <&topckgen_clk CLK_TOP_UNIVPLL_D6_D16>,
+            <&topckgen_clk CLK_TOP_UNIVPLL_D6_D8>,
+            <&topckgen_clk CLK_TOP_CAMTG4_SEL>;
+        clock-names = "6", "12", "13", "19.2", "24", "26", "52", "mclk";
+
+        status = "okay";
+
+        port {
+            sensor1_out: endpoint {
+                remote-endpoint = <&seninf_csi_port_0_in>;
+            };
+        };
+    };
+};
+
+&flashlights_dunhuang {
+        pinctrl-names = "default",
+                "flash_light_en_pin_0",
+                "flash_light_en_pin_1",
+                "flash_light_flash_pin_0",
+                "flash_light_flash_pin_1",
+                "flash_light_pwm_pin";
+
+        pinctrl-0 = <&flashlights_dunhuang_pins_default>;
+        pinctrl-1 = <&flash_light_en_pin_0>;
+        pinctrl-2 = <&flash_light_en_pin_1>;
+        pinctrl-3 = <&flash_light_flash_pin_0>;
+        pinctrl-4 = <&flash_light_flash_pin_1>;
+        pinctrl-5 = <&flash_light_pwm_pin>;
+
+        status = "okay";
+		flash@0{
+			reg = <0>;
+			type = <0>;
+			ct = <0>;
+			part = <0>;
+			port@0 {
+				fl_core_0: endpoint {
+					remote-endpoint = <&flashlight_0>;
+				};
+			};
+		};
+};
+
+&pio {
+        flashlights_dunhuang_pins_default:default {
+        };
+        flash_light_en_pin_0: flash_light_en_pin_0 {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO16__FUNC_GPIO16>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+        flash_light_en_pin_1: flash_light_en_pin_1 {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO16__FUNC_GPIO16>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+        flash_light_flash_pin_0: flash_light_flash_pin_0 {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO120__FUNC_GPIO120>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+        flash_light_flash_pin_1: flash_light_flash_pin_1 {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO120__FUNC_GPIO120>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+        flash_light_pwm_pin: flash_light_pwm_pin {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO120__FUNC_PWM_1>;
+                };
+        };
+};
+
+&mtk_composite_v4l2_1 {
+	port@0 {
+		flashlight_0: endpoint {
+			remote-endpoint = <&fl_core_0>;
+		};
+	};
+};
+
+
