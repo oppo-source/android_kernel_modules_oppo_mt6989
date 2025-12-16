@@ -1,0 +1,54 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2020 MediaTek Inc. */
+
+&accdet {
+	headset-three-key-threshold = <0 82 170 306>;
+	headset-eint0-disable = <1>;
+	typec_switch_type = <3>;
+};
+
+/* determine whether iv latch point needs to be modified */
+&afe {
+	iv-latch-point-modify = <1>;
+};
+
+&i2c6 {
+	clock-frequency = <400000>;
+
+	/* AWINIC AW882XX mono Smart PA */
+	aw882xx_smartpa_0: aw882xx_smartpa@34 {
+		compatible = "awinic,aw882xx_smartpa";
+		reg = <0x34>;
+		#sound-dai-cells = <0>;
+		dc-flag = <0>;
+		sync-load = <1>;
+		aw-re-min = <5300>;
+		aw-re-max = <7500>;
+		aw-f0-min = <100>;
+		aw-f0-max = <2000>;
+		sound-channel = <0>;
+		aw-cali-mode = "aw_misc";
+		aw-cali-check = <0>;
+		need_f0_cali = <1>;
+		fade-flag = <1>;
+		status = "okay";
+	};
+	/* AWINIC AW882XX mono Smart PA End */
+};
+
+&audio_extend {
+	//for awinic speaker
+	oplus,speaker-vendor = "awinic";
+	oplus,speaker-i2s-id = <11>;
+	oplus,speaker-i2s-id-in = <10>;
+	oplus,speaker-codec-name = "aw882xx_smartpa.6-0034";
+	oplus,speaker-codec-dai-name = "aw882xx-aif-6-34";
+	oplus,spk-i2s-index = <21 20>;
+};
+
+&sound {
+	mediatek,spk-i2s = <21 20>;
+	mediatek,speaker-codec {
+		sound-dai = <&aw882xx_smartpa_0>;
+	};
+};

@@ -1,0 +1,2384 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Copyright (C) 2023 OPLUS. All rights reserved.
+ */
+/*****************************************************************************
+ *
+ * Filename:
+ * ---------
+ *	 zhuquec2widemipiraw_Sensor.c
+ *
+ * Project:
+ * --------
+ *	 ALPS
+ *
+ * Description:
+ * ------------
+ *	 Source code of Sensor driver
+ *
+ *
+ *------------------------------------------------------------------------------
+ * Upper this line, this part is controlled by CC/CQ. DO NOT MODIFY!!
+ *============================================================================
+ ****************************************************************************/
+#include "zhuquec2widemipiraw_Sensor.h"
+#define SENSOR_NAME  SENSOR_DRVNAME_ZHUQUEC2WIDE_MIPI_RAW
+#define PFX "zhuquec2wide_camera_sensor"
+#define LOG_INF(format, args...) pr_err(PFX "[%s] " format, __func__, ##args)
+
+#define ZHUQUEC2WIDE_EEPROM_I2C_ADDR	(0xA2)
+
+#define OTP_SIZE	          (0x2000)
+#define SENSOR_ID	          (0x56084700)
+
+#define ZHUQUEC2WIDE_STEREO_START_ADDR    (0x1260)
+#define ZHUQUEC2WIDE_AESYNC_START_ADDR    (0x1A00)
+#define ZHUQUEC2WIDE_UNIQUE_SENSOR_ID_ADDR 0x00
+#define ZHUQUEC2WIDE_UNIQUE_SENSOR_ID_LENGTH 16
+static BYTE zhuquec2wide_unique_id[ZHUQUEC2WIDE_UNIQUE_SENSOR_ID_LENGTH] = { 0 };
+
+static struct subdrv_ctx *g_ctx = NULL;
+static kal_uint8 otp_data_checksum[OTP_SIZE] = {0};
+static void set_group_hold(void *arg, u8 en);
+static u16 get_gain2reg(u32 gain);
+static int zhuquec2wide_set_test_pattern(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static int zhuquec2wide_check_sensor_id(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static int zhuquec2wide_get_eeprom_common_data(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static int zhuquec2wide_set_eeprom_calibration(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static int zhuquec2wide_get_eeprom_calibration(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static int zhuquec2wide_get_otp_checksum_data(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static int zhuquec2wide_streaming_suspend(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static int zhuquec2wide_streaming_resume(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+
+static int get_imgsensor_id(struct subdrv_ctx *ctx, u32 *sensor_id);
+static int open(struct subdrv_ctx *ctx);
+static int init_ctx(struct subdrv_ctx *ctx,	struct i2c_client *i2c_client, u8 i2c_write_id);
+
+static int zhuquec2wide_set_gain_convert(struct subdrv_ctx *ctx, u32 gain);
+static int zhuquec2wide_set_gain(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static int zhuquec2wide_set_shutter_convert(struct subdrv_ctx *ctx, u64 shutter);
+static int zhuquec2wide_set_shutter(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static int zhuquec2wide_set_shutter_frame_length(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static int zhuquec2wide_set_shutter_frame_length_convert(struct subdrv_ctx *ctx, u64 shutter, u32 frame_length);
+static int zhuquec2wide_set_max_framerate_by_scenario(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+
+static bool read_cmos_eeprom_p8(struct subdrv_ctx *ctx, kal_uint16 addr, BYTE *data, int size);
+static int zhuquec2wide_set_register(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static int zhuquec2wide_get_register(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static int vsync_notify(struct subdrv_ctx *ctx, unsigned int sof_cnt);
+static int zhuquec2wide_extend_frame_length(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static int zhuquec2wide_set_multi_shutter_frame_length_ctrl(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static int zhuquec2wide_set_frame_length(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static int zhuquec2wide_common_control(struct subdrv_ctx *ctx,
+	enum SENSOR_SCENARIO_ID_ENUM scenario_id,
+	MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
+	MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data);
+static bool g_id_from_dts_flag = false;
+static void get_imgsensor_id_from_dts(struct subdrv_ctx *ctx, u32 *sensor_id);
+static int zhuquec2wide_get_unique_sensorid(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static int zhuquec2wide_get_cloud_otp_info(struct subdrv_ctx *ctx, u8 *para, u32 *len);
+static void zhuquec2wide_set_mirror_flip(struct subdrv_ctx *ctx, u8 image_mirror);
+static void sw_power_control(struct subdrv_ctx *ctx, u8 power_up);
+
+static struct eeprom_map_info zhuquec2wide_eeprom_info[] = {
+	{ EEPROM_META_MODULE_ID, 0x0000, 0x0010, 0x0011, 2, true },
+	{ EEPROM_META_SENSOR_ID, 0x0006, 0x0010, 0x001l, 2, true },
+	{ EEPROM_META_LENS_ID, 0x0008, 0x0010, 0x0011, 2, true },
+	{ EEPROM_META_VCM_ID, 0x000A, 0x0010, 0x0011, 2, true },
+	{ EEPROM_META_MIRROR_FLIP, 0x000E, 0x0010, 0x0011, 1, true },
+	{ EEPROM_META_MODULE_SN, 0x00B0, 0x00C7, 0x00C8, 23, true },
+	{ EEPROM_META_AF_CODE, 0x0092, 0x0098, 0x0099, 6, true },
+	{ EEPROM_META_AF_FLAG, 0x0098, 0x0098, 0x0099, 1, true },
+	{ EEPROM_META_STEREO_DATA, 0x0000, 0x0000, 0x0000, 0, false },
+	{ EEPROM_META_STEREO_MW_MAIN_DATA, 0x1260, 0x0000, 0x0000, CALI_DATA_SLAVE_LENGTH, false },
+	{ EEPROM_META_STEREO_MT_MAIN_DATA, 0, 0, 0, 0, false },
+	{ EEPROM_META_STEREO_MT_MAIN_DATA_105CM, 0, 0, 0, 0, false },
+	{ EEPROM_META_DISTORTION_DATA, 0, 0, 0, 0, false },
+};
+
+static struct subdrv_feature_control feature_control_list[] = {
+	{SENSOR_FEATURE_SET_TEST_PATTERN, zhuquec2wide_set_test_pattern},
+	{SENSOR_FEATURE_CHECK_SENSOR_ID, zhuquec2wide_check_sensor_id},
+	{SENSOR_FEATURE_GET_EEPROM_COMDATA, zhuquec2wide_get_eeprom_common_data},
+	{SENSOR_FEATURE_SET_SENSOR_OTP, zhuquec2wide_set_eeprom_calibration},
+	{SENSOR_FEATURE_GET_EEPROM_STEREODATA, zhuquec2wide_get_eeprom_calibration},
+	{SENSOR_FEATURE_GET_SENSOR_OTP_ALL, zhuquec2wide_get_otp_checksum_data},
+	{SENSOR_FEATURE_SET_STREAMING_SUSPEND, zhuquec2wide_streaming_suspend},
+	{SENSOR_FEATURE_SET_STREAMING_RESUME, zhuquec2wide_streaming_resume},
+	{SENSOR_FEATURE_SET_GAIN, zhuquec2wide_set_gain},
+	{SENSOR_FEATURE_SET_ESHUTTER, zhuquec2wide_set_shutter},
+	{SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME, zhuquec2wide_set_shutter_frame_length},
+	{SENSOR_FEATURE_SET_SEAMLESS_EXTEND_FRAME_LENGTH, zhuquec2wide_extend_frame_length},
+	{SENSOR_FEATURE_SET_MAX_FRAME_RATE_BY_SCENARIO, zhuquec2wide_set_max_framerate_by_scenario},
+	{SENSOR_FEATURE_SET_MULTI_SHUTTER_FRAME_TIME, zhuquec2wide_set_multi_shutter_frame_length_ctrl},
+	{SENSOR_FEATURE_SET_REGISTER, zhuquec2wide_set_register},
+	{SENSOR_FEATURE_GET_REGISTER, zhuquec2wide_get_register},
+	{SENSOR_FEATURE_SET_FRAMELENGTH, zhuquec2wide_set_frame_length},
+	{SENSOR_FEATURE_GET_UNIQUE_SENSORID, zhuquec2wide_get_unique_sensorid},
+	{SENSOR_FEATURE_GET_CLOUD_OTP_INFO, zhuquec2wide_get_cloud_otp_info},
+};
+
+
+static struct eeprom_info_struct eeprom_info[] = {
+	{
+		.header_id = 0x0174009C,
+		.addr_header_id = 0x00000006,
+		.i2c_write_id = 0xA2,
+	},
+	{
+		.header_id = 0x016f009c,
+		.addr_header_id = 0x00000006,
+		.i2c_write_id = 0xA2,
+	},
+};
+
+static struct mtk_mbus_frame_desc_entry frame_desc_prev_cap[] = {
+	{
+		.bus.csi2 = {
+			.channel = 0,
+			.data_type = 0x2b,
+			.hsize = 3264,
+			.vsize = 2448,
+			.user_data_desc = VC_STAGGER_NE,
+		},
+	}
+};
+
+static struct mtk_mbus_frame_desc_entry frame_desc_vid[] = {
+	{
+		.bus.csi2 = {
+			.channel = 0,
+			.data_type = 0x2b,
+			.hsize = 3264,
+			.vsize = 1840,
+			.user_data_desc = VC_STAGGER_NE,
+		},
+	}
+};
+
+static struct mtk_mbus_frame_desc_entry frame_desc_hs[] = {
+	{
+		.bus.csi2 = {
+			.channel = 0,
+			.data_type = 0x2b,
+			.hsize = 1632,
+			.vsize = 1224,
+			.user_data_desc = VC_STAGGER_NE,
+		},
+	}
+};
+
+static struct mtk_mbus_frame_desc_entry frame_desc_slim[] = {
+	{
+		.bus.csi2 = {
+			.channel = 0,
+			.data_type = 0x2b,
+			.hsize = 3264,
+			.vsize = 1840,
+			.user_data_desc = VC_STAGGER_NE,
+		},
+	}
+};
+
+static struct mtk_mbus_frame_desc_entry frame_desc_cus1[] = {
+	{
+		.bus.csi2 = {
+			.channel = 0,
+			.data_type = 0x2b,
+			.hsize = 3264,
+			.vsize = 2448,
+			.user_data_desc = VC_STAGGER_NE,
+		},
+	}
+};
+
+static struct mtk_mbus_frame_desc_entry frame_desc_cus2[] = {
+	{
+		.bus.csi2 = {
+			.channel = 0,
+			.data_type = 0x2b,
+			.hsize = 1632,
+			.vsize = 1224,
+			.user_data_desc = VC_STAGGER_NE,
+		},
+	}
+};
+
+static struct mtk_mbus_frame_desc_entry frame_desc_cus3[] = {
+	{
+		.bus.csi2 = {
+			.channel = 0,
+			.data_type = 0x2b,
+			.hsize = 2560,
+			.vsize = 1920,
+			.user_data_desc = VC_STAGGER_NE,
+		},
+	}
+};
+
+static struct mtk_mbus_frame_desc_entry frame_desc_cus4[] = {
+	{
+		.bus.csi2 = {
+			.channel = 0,
+			.data_type = 0x2b,
+			.hsize = 2304,
+			.vsize = 1728,
+			.user_data_desc = VC_STAGGER_NE,
+		},
+	}
+};
+
+static struct mtk_mbus_frame_desc_entry frame_desc_cus5[] = {
+	{
+		.bus.csi2 = {
+			.channel = 0,
+			.data_type = 0x2b,
+			.hsize = 1664,
+			.vsize = 1248,
+			.user_data_desc = VC_STAGGER_NE,
+		},
+	}
+};
+
+static struct mtk_mbus_frame_desc_entry frame_desc_cus6[] = {
+	{
+		.bus.csi2 = {
+			.channel = 0,
+			.data_type = 0x2b,
+			.hsize = 3264,
+			.vsize = 1632,
+			.user_data_desc = VC_STAGGER_NE,
+		},
+	}
+};
+
+static struct mtk_mbus_frame_desc_entry frame_desc_cus7[] = {
+	{
+		.bus.csi2 = {
+			.channel = 0,
+			.data_type = 0x2b,
+			.hsize = 1632,
+			.vsize = 816,
+			.user_data_desc = VC_STAGGER_NE,
+		},
+	}
+};
+
+static struct mtk_mbus_frame_desc_entry frame_desc_cus8[] = {
+	{
+		.bus.csi2 = {
+			.channel = 0,
+			.data_type = 0x2b,
+			.hsize = 1920,
+			.vsize = 1080,
+			.user_data_desc = VC_STAGGER_NE,
+		},
+	}
+};
+
+static struct mtk_mbus_frame_desc_entry frame_desc_cus9[] = {
+	{
+		.bus.csi2 = {
+			.channel = 0,
+			.data_type = 0x2b,
+			.hsize = 2368,
+			.vsize = 1776,
+			.user_data_desc = VC_STAGGER_NE,
+		},
+	}
+};
+
+static struct mtk_mbus_frame_desc_entry frame_desc_cus10[] = {
+	{
+		.bus.csi2 = {
+			.channel = 0,
+			.data_type = 0x2b,
+			.hsize = 3264,
+			.vsize = 2448,
+			.user_data_desc = VC_STAGGER_NE,
+		},
+	},
+	{
+		.bus.csi2 = {
+			.channel = 1,
+			.data_type = 0x2b,
+			.hsize = 3264,
+			.vsize = 2448,
+			.user_data_desc = VC_STAGGER_ME,
+		},
+	},
+};
+
+static struct subdrv_mode_struct mode_struct[] = {
+	{ /* 3264x2448 @30FPS  */
+		.frame_desc = frame_desc_prev_cap,
+		.num_entries = ARRAY_SIZE(frame_desc_prev_cap),
+		.mode_setting_table = zhuquec2wide_preview_capture_setting,
+		.mode_setting_len = ARRAY_SIZE(zhuquec2wide_preview_capture_setting),
+		.hdr_mode = HDR_NONE,
+		.raw_cnt = 1,
+		.exp_cnt = 1,
+		.pclk = 36000000,
+		.linelength = 460,
+		.framelength = 2608,
+		.max_framerate = 300,
+		.mipi_pixel_rate = 288000000,
+		.readout_length = 0,
+		.read_margin = 0,
+		.framelength_step = 4,
+		.coarse_integ_step = 4,
+		.min_exposure_line = 4,
+		.imgsensor_winsize_info = {
+			.full_w = 3280,
+			.full_h = 2464,
+			.x0_offset = 8,
+			.y0_offset = 8,
+			.w0_size = 3264,
+			.h0_size = 2448,
+			.scale_w = 3264,
+			.scale_h = 2448,
+			.x1_offset = 0,
+			.y1_offset = 0,
+			.w1_size = 3264,
+			.h1_size = 2448,
+			.x2_tg_offset = 0,
+			.y2_tg_offset = 0,
+			.w2_tg_size = 3264,
+			.h2_tg_size = 2448,
+		},
+		.ae_binning_ratio = 1,
+		.delay_frame = 2,
+		.csi_param = {},
+		.sensor_setting_info = {
+			.sensor_scenario_usage = NORMAL_MASK,
+			.equivalent_fps = 30,
+		},
+	},
+	{ /* 3264x2448 @30FPS  */
+		.frame_desc = frame_desc_prev_cap,
+		.num_entries = ARRAY_SIZE(frame_desc_prev_cap),
+		.mode_setting_table = zhuquec2wide_preview_capture_setting,
+		.mode_setting_len = ARRAY_SIZE(zhuquec2wide_preview_capture_setting),
+		.hdr_mode = HDR_NONE,
+		.raw_cnt = 1,
+		.exp_cnt = 1,
+		.pclk = 36000000,
+		.linelength = 460,
+		.framelength = 2608,
+		.max_framerate = 300,
+		.mipi_pixel_rate = 288000000,
+		.readout_length = 0,
+		.read_margin = 0,
+		.framelength_step = 4,
+		.coarse_integ_step = 4,
+		.min_exposure_line = 4,
+		.imgsensor_winsize_info = {
+			.full_w = 3280,
+			.full_h = 2464,
+			.x0_offset = 8,
+			.y0_offset = 8,
+			.w0_size = 3264,
+			.h0_size = 2448,
+			.scale_w = 3264,
+			.scale_h = 2448,
+			.x1_offset = 0,
+			.y1_offset = 0,
+			.w1_size = 3264,
+			.h1_size = 2448,
+			.x2_tg_offset = 0,
+			.y2_tg_offset = 0,
+			.w2_tg_size = 3264,
+			.h2_tg_size = 2448,
+		},
+		.ae_binning_ratio = 1,
+		.delay_frame = 2,
+		.csi_param = {},
+		.sensor_setting_info = {
+			.sensor_scenario_usage = UNUSE_MASK,
+			.equivalent_fps = 0,
+		},
+	},
+
+	{
+		.frame_desc = frame_desc_vid,
+		.num_entries = ARRAY_SIZE(frame_desc_vid),
+		.mode_setting_table = zhuquec2wide_normal_video_setting,
+		.mode_setting_len = ARRAY_SIZE(zhuquec2wide_normal_video_setting),
+		.hdr_mode = HDR_NONE,
+		.raw_cnt = 1,
+		.exp_cnt = 1,
+		.pclk = 36000000,
+		.linelength = 460,
+		.framelength = 2608,
+		.max_framerate = 300,
+		.mipi_pixel_rate = 288000000,
+		.readout_length = 0,
+		.read_margin = 0,
+		.framelength_step = 4,
+		.coarse_integ_step = 4,
+		.min_exposure_line = 4,
+		.imgsensor_winsize_info = {
+			.full_w = 3280,
+			.full_h = 2464,
+			.x0_offset = 8,
+			.y0_offset = 312,
+			.w0_size = 3264,
+			.h0_size = 1840,
+			.scale_w = 3264,
+			.scale_h = 1840,
+			.x1_offset = 0,
+			.y1_offset = 0,
+			.w1_size = 3264,
+			.h1_size = 1840,
+			.x2_tg_offset = 0,
+			.y2_tg_offset = 0,
+			.w2_tg_size = 3264,
+			.h2_tg_size = 1840,
+		},
+		.ae_binning_ratio = 1,
+		.delay_frame = 2,
+		.csi_param = {},
+		.sensor_setting_info = {
+			.sensor_scenario_usage = NORMAL_MASK,
+			.equivalent_fps = 30,
+		},
+	},
+
+	{
+		.frame_desc = frame_desc_hs,
+		.num_entries = ARRAY_SIZE(frame_desc_hs),
+		.mode_setting_table = zhuquec2wide_hs_video_setting,
+		.mode_setting_len = ARRAY_SIZE(zhuquec2wide_hs_video_setting),
+		.hdr_mode = HDR_NONE,
+		.raw_cnt = 1,
+		.exp_cnt = 1,
+		.pclk = 36000000,
+		.linelength = 478,
+		.framelength = 1252,
+		.max_framerate = 600,
+		.mipi_pixel_rate = 144000000,
+		.readout_length = 0,
+		.read_margin = 0,
+		.framelength_step = 4,
+		.coarse_integ_step = 4,
+		.min_exposure_line = 4,
+		.imgsensor_winsize_info = {
+			.full_w = 3280,
+			.full_h = 2464,
+			.x0_offset = 8,
+			.y0_offset = 8,
+			.w0_size = 3264,
+			.h0_size = 2448,
+			.scale_w = 1632,
+			.scale_h = 1224,
+			.x1_offset = 0,
+			.y1_offset = 0,
+			.w1_size = 1632,
+			.h1_size = 1224,
+			.x2_tg_offset = 0,
+			.y2_tg_offset = 0,
+			.w2_tg_size = 1632,
+			.h2_tg_size = 1224,
+		},
+		.ae_binning_ratio = 1,
+		.delay_frame = 2,
+		.csi_param = {},
+		.sensor_setting_info = {
+			.sensor_scenario_usage = UNUSE_MASK,
+			.equivalent_fps = 60,
+		},
+	},
+
+	{
+		.frame_desc = frame_desc_slim,
+		.num_entries = ARRAY_SIZE(frame_desc_slim),
+		.mode_setting_table = zhuquec2wide_slim_video_setting,
+		.mode_setting_len = ARRAY_SIZE(zhuquec2wide_slim_video_setting),
+		.hdr_mode = HDR_NONE,
+		.raw_cnt = 1,
+		.exp_cnt = 1,
+		.pclk = 288000000,
+		.linelength = 3672,
+		.framelength = 2612,
+		.max_framerate = 300,
+		.mipi_pixel_rate = 288000000,
+		.readout_length = 0,
+		.read_margin = 0,
+		.framelength_step = 4,
+		.coarse_integ_step = 4,
+		.min_exposure_line = 4,
+		.imgsensor_winsize_info = {
+			.full_w = 3280,
+			.full_h = 2464,
+			.x0_offset = 8,
+			.y0_offset = 312,
+			.w0_size = 3264,
+			.h0_size = 1840,
+			.scale_w = 3264,
+			.scale_h = 1840,
+			.x1_offset = 0,
+			.y1_offset = 0,
+			.w1_size = 3264,
+			.h1_size = 1840,
+			.x2_tg_offset = 0,
+			.y2_tg_offset = 0,
+			.w2_tg_size = 3264,
+			.h2_tg_size = 1840,
+		},
+		.ae_binning_ratio = 1,
+		.delay_frame = 2,
+		.csi_param = {},
+		.sensor_setting_info = {
+			.sensor_scenario_usage = UNUSE_MASK,
+			.equivalent_fps = 0,
+		},
+	},
+
+	{
+		.frame_desc = frame_desc_cus1,
+		.num_entries = ARRAY_SIZE(frame_desc_cus1),
+		.mode_setting_table = zhuquec2wide_custom1_setting,
+		.mode_setting_len = ARRAY_SIZE(zhuquec2wide_custom1_setting),
+		.hdr_mode = HDR_NONE,
+		.raw_cnt = 1,
+		.exp_cnt = 1,
+		.pclk = 36000000,
+		.linelength = 460,
+		.framelength = 3240,
+		.max_framerate = 240,
+		.mipi_pixel_rate = 288000000,
+		.readout_length = 0,
+		.read_margin = 0,
+		.framelength_step = 4,
+		.coarse_integ_step = 4,
+		.min_exposure_line = 4,
+		.imgsensor_winsize_info = {
+			.full_w = 3280,
+			.full_h = 2464,
+			.x0_offset = 8,
+			.y0_offset = 8,
+			.w0_size = 3264,
+			.h0_size = 2448,
+			.scale_w = 3264,
+			.scale_h = 2448,
+			.x1_offset = 0,
+			.y1_offset = 0,
+			.w1_size = 3264,
+			.h1_size = 2448,
+			.x2_tg_offset = 0,
+			.y2_tg_offset = 0,
+			.w2_tg_size = 3264,
+			.h2_tg_size = 2448,
+		},
+		.ae_binning_ratio = 1,
+		.delay_frame = 2,
+		.csi_param = {},
+		.sensor_setting_info = {
+			.sensor_scenario_usage = UNUSE_MASK,
+			.equivalent_fps = 0,
+		},
+	},
+
+	{
+		.frame_desc = frame_desc_cus2,
+		.num_entries = ARRAY_SIZE(frame_desc_cus2),
+		.mode_setting_table = zhuquec2wide_custom2_setting,
+		.mode_setting_len = ARRAY_SIZE(zhuquec2wide_custom2_setting),
+		.hdr_mode = HDR_NONE,
+		.raw_cnt = 1,
+		.exp_cnt = 1,
+		.pclk = 36000000,
+		.linelength = 478,
+		.framelength = 3132,
+		.max_framerate = 240,
+		.mipi_pixel_rate = 144000000,
+		.readout_length = 0,
+		.read_margin = 0,
+		.framelength_step = 4,
+		.coarse_integ_step = 4,
+		.min_exposure_line = 4,
+		.imgsensor_winsize_info = {
+			.full_w = 3280,
+			.full_h = 2464,
+			.x0_offset = 8,
+			.y0_offset = 8,
+			.w0_size = 3264,
+			.h0_size = 2448,
+			.scale_w = 1632,
+			.scale_h = 1224,
+			.x1_offset = 0,
+			.y1_offset = 0,
+			.w1_size = 1632,
+			.h1_size = 1224,
+			.x2_tg_offset = 0,
+			.y2_tg_offset = 0,
+			.w2_tg_size = 1632,
+			.h2_tg_size = 1224,
+		},
+		.ae_binning_ratio = 1,
+		.delay_frame = 2,
+		.csi_param = {},
+		.sensor_setting_info = {
+			.sensor_scenario_usage = UNUSE_MASK,
+			.equivalent_fps = 0,
+		},
+	},
+
+	{
+		.frame_desc = frame_desc_cus3,
+		.num_entries = ARRAY_SIZE(frame_desc_cus3),
+		.mode_setting_table = zhuquec2wide_custom3_setting,
+		.mode_setting_len = ARRAY_SIZE(zhuquec2wide_custom3_setting),
+		.hdr_mode = HDR_NONE,
+		.raw_cnt = 1,
+		.exp_cnt = 1,
+		.pclk = 36000000,
+		.linelength = 460,
+		.framelength = 3256,
+		.max_framerate = 240,
+		.mipi_pixel_rate = 288000000,
+		.readout_length = 0,
+		.read_margin = 0,
+		.framelength_step = 4,
+		.coarse_integ_step = 4,
+		.min_exposure_line = 4,
+		.imgsensor_winsize_info = {
+			.full_w = 3280,
+			.full_h = 2464,
+			.x0_offset = 360,
+			.y0_offset = 272,
+			.w0_size = 2560,
+			.h0_size = 1920,
+			.scale_w = 2560,
+			.scale_h = 1920,
+			.x1_offset = 0,
+			.y1_offset = 0,
+			.w1_size = 2560,
+			.h1_size = 1920,
+			.x2_tg_offset = 0,
+			.y2_tg_offset = 0,
+			.w2_tg_size = 2560,
+			.h2_tg_size = 1920,
+		},
+		.ae_binning_ratio = 1,
+		.delay_frame = 2,
+		.csi_param = {},
+		.sensor_setting_info = {
+			.sensor_scenario_usage = UNUSE_MASK,
+			.equivalent_fps = 0,
+		},
+	},
+
+	{
+		.frame_desc = frame_desc_cus4,
+		.num_entries = ARRAY_SIZE(frame_desc_cus4),
+		.mode_setting_table = zhuquec2wide_custom4_setting,
+		.mode_setting_len = ARRAY_SIZE(zhuquec2wide_custom4_setting),
+		.hdr_mode = HDR_NONE,
+		.raw_cnt = 1,
+		.exp_cnt = 1,
+		.pclk = 36000000,
+		.linelength = 548,
+		.framelength = 2732,
+		.max_framerate = 240,
+		.mipi_pixel_rate = 288000000,
+		.readout_length = 0,
+		.read_margin = 0,
+		.framelength_step = 4,
+		.coarse_integ_step = 4,
+		.min_exposure_line = 4,
+		.imgsensor_winsize_info = {
+			.full_w = 3280,
+			.full_h = 2464,
+			.x0_offset = 488,
+			.y0_offset = 368,
+			.w0_size = 2304,
+			.h0_size = 1728,
+			.scale_w = 2304,
+			.scale_h = 1728,
+			.x1_offset = 0,
+			.y1_offset = 0,
+			.w1_size = 2304,
+			.h1_size = 1728,
+			.x2_tg_offset = 0,
+			.y2_tg_offset = 0,
+			.w2_tg_size = 2304,
+			.h2_tg_size = 1728,
+		},
+		.ae_binning_ratio = 1,
+		.delay_frame = 2,
+		.csi_param = {},
+		.sensor_setting_info = {
+			.sensor_scenario_usage = UNUSE_MASK,
+			.equivalent_fps = 0,
+		},
+	},
+
+	{
+		.frame_desc = frame_desc_cus5,
+		.num_entries = ARRAY_SIZE(frame_desc_cus5),
+		.mode_setting_table = zhuquec2wide_custom5_setting,
+		.mode_setting_len = ARRAY_SIZE(zhuquec2wide_custom5_setting),
+		.hdr_mode = HDR_NONE,
+		.raw_cnt = 1,
+		.exp_cnt = 1,
+		.pclk = 36000000,
+		.linelength = 598,
+		.framelength = 2504,
+		.max_framerate = 240,
+		.mipi_pixel_rate = 288000000,
+		.readout_length = 0,
+		.read_margin = 0,
+		.framelength_step = 4,
+		.coarse_integ_step = 4,
+		.min_exposure_line = 4,
+		.imgsensor_winsize_info = {
+			.full_w = 3280,
+			.full_h = 2464,
+			.x0_offset = 808,
+			.y0_offset = 608,
+			.w0_size = 1664,
+			.h0_size = 1248,
+			.scale_w = 1664,
+			.scale_h = 1248,
+			.x1_offset = 0,
+			.y1_offset = 0,
+			.w1_size = 1664,
+			.h1_size = 1248,
+			.x2_tg_offset = 0,
+			.y2_tg_offset = 0,
+			.w2_tg_size = 1664,
+			.h2_tg_size = 1248,
+		},
+		.ae_binning_ratio = 1,
+		.delay_frame = 2,
+		.csi_param = {
+			.dphy_trail = 75,
+		},
+		.sensor_setting_info = {
+			.sensor_scenario_usage = NORMAL_MASK,
+			.equivalent_fps = 24,
+		},
+	},
+	{
+		.frame_desc = frame_desc_cus6,
+		.num_entries = ARRAY_SIZE(frame_desc_cus6),
+		.mode_setting_table = zhuquec2wide_custom6_setting,
+		.mode_setting_len = ARRAY_SIZE(zhuquec2wide_custom6_setting),
+		.hdr_mode = HDR_NONE,
+		.raw_cnt = 1,
+		.exp_cnt = 1,
+		.pclk = 36000000,
+		.linelength = 460,
+		.framelength = 2608,
+		.max_framerate = 300,
+		.mipi_pixel_rate = 288000000,
+		.readout_length = 0,
+		.read_margin = 0,
+		.framelength_step = 4,
+		.coarse_integ_step = 4,
+		.min_exposure_line = 4,
+		.imgsensor_winsize_info = {
+			.full_w = 3280,
+			.full_h = 2464,
+			.x0_offset = 8,
+			.y0_offset = 416,
+			.w0_size = 3264,
+			.h0_size = 1632,
+			.scale_w = 3264,
+			.scale_h = 1632,
+			.x1_offset = 0,
+			.y1_offset = 0,
+			.w1_size = 3264,
+			.h1_size = 1632,
+			.x2_tg_offset = 0,
+			.y2_tg_offset = 0,
+			.w2_tg_size = 3264,
+			.h2_tg_size = 1632,
+		},
+		.ae_binning_ratio = 1,
+		.delay_frame = 2,
+		.csi_param = {0},
+		.sensor_setting_info = {
+			.sensor_scenario_usage = NORMAL_MASK,
+			.equivalent_fps = 30,
+		},
+	},
+	{
+		.frame_desc = frame_desc_cus7,
+		.num_entries = ARRAY_SIZE(frame_desc_cus7),
+		.mode_setting_table = zhuquec2wide_custom7_setting,
+		.mode_setting_len = ARRAY_SIZE(zhuquec2wide_custom7_setting),
+		.hdr_mode = HDR_NONE,
+		.raw_cnt = 1,
+		.exp_cnt = 1,
+		.pclk = 36000000,
+		.linelength = 478,
+		.framelength = 2502,
+		.max_framerate = 300,
+		.mipi_pixel_rate = 288000000,
+		.readout_length = 0,
+		.read_margin = 0,
+		.framelength_step = 4,
+		.coarse_integ_step = 4,
+		.min_exposure_line = 4,
+		.imgsensor_winsize_info = {
+			.full_w = 3280,
+			.full_h = 2464,
+			.x0_offset = 8,
+			.y0_offset = 416,
+			.w0_size = 3264,
+			.h0_size = 1632,
+			.scale_w = 1632,
+			.scale_h = 816,
+			.x1_offset = 0,
+			.y1_offset = 0,
+			.w1_size = 1632,
+			.h1_size = 816,
+			.x2_tg_offset = 0,
+			.y2_tg_offset = 0,
+			.w2_tg_size = 1632,
+			.h2_tg_size = 816,
+		},
+		.ae_binning_ratio = 1,
+		.delay_frame = 2,
+		.csi_param = {0},
+		.sensor_setting_info = {
+			.sensor_scenario_usage = NORMAL_MASK,
+			.equivalent_fps = 30,
+		},
+	},
+	{/*@@OV08D_MIPI_1920x1080_2lane_1440M_60fps_V2.2 */
+		.frame_desc = frame_desc_cus8,
+		.num_entries = ARRAY_SIZE(frame_desc_cus8),
+		.mode_setting_table = zhuquec2wide_custom8_setting,
+		.mode_setting_len = ARRAY_SIZE(zhuquec2wide_custom8_setting),
+		.hdr_mode = HDR_NONE,
+		.raw_cnt = 1,
+		.exp_cnt = 1,
+		.pclk = 36000000,
+		.linelength = 516,
+		.framelength = 1160,
+		.max_framerate = 600,
+		.mipi_pixel_rate = 288000000,
+		.readout_length = 0,
+		.read_margin = 0,
+		.framelength_step = 4,
+		.coarse_integ_step = 4,
+		.min_exposure_line = 4,
+		.imgsensor_winsize_info = {
+			.full_w = 3280,
+			.full_h = 2464,
+			.x0_offset = 680,
+			.y0_offset = 692,
+			.w0_size = 1920,
+			.h0_size = 1080,
+			.scale_w = 1920,
+			.scale_h = 1080,
+			.x1_offset = 0,
+			.y1_offset = 0,
+			.w1_size = 1920,
+			.h1_size = 1080,
+			.x2_tg_offset = 0,
+			.y2_tg_offset = 0,
+			.w2_tg_size = 1920,
+			.h2_tg_size = 1080,
+		},
+		.ae_binning_ratio = 1,
+		.delay_frame = 2,
+		.csi_param = {0},
+		.sensor_setting_info = {
+			.sensor_scenario_usage = NORMAL_MASK,
+			.equivalent_fps = 60,
+		},
+	},
+	{/*@@OV08D_MIPI_2368x1776_2lane_1440M_24fps_V2.2 */
+		.frame_desc = frame_desc_cus9,
+		.num_entries = ARRAY_SIZE(frame_desc_cus9),
+		.mode_setting_table = zhuquec2wide_custom9_setting,
+		.mode_setting_len = ARRAY_SIZE(zhuquec2wide_custom9_setting),
+		.hdr_mode = HDR_NONE,
+		.raw_cnt = 1,
+		.exp_cnt = 1,
+		.pclk = 36000000,
+		.linelength = 460,
+		.framelength = 3256,
+		.max_framerate = 240,
+		.mipi_pixel_rate = 288000000,
+		.readout_length = 0,
+		.read_margin = 0,
+		.framelength_step = 4,
+		.coarse_integ_step = 4,
+		.min_exposure_line = 4,
+		.imgsensor_winsize_info = {
+			.full_w = 3280,
+			.full_h = 2464,
+			.x0_offset = 456,
+			.y0_offset = 344,
+			.w0_size = 2368,
+			.h0_size = 1776,
+			.scale_w = 2368,
+			.scale_h = 1776,
+			.x1_offset = 0,
+			.y1_offset = 0,
+			.w1_size = 2368,
+			.h1_size = 1776,
+			.x2_tg_offset = 0,
+			.y2_tg_offset = 0,
+			.w2_tg_size = 2368,
+			.h2_tg_size = 1776,
+		},
+		.ae_binning_ratio = 1,
+		.delay_frame = 2,
+		.csi_param = {0},
+		.sensor_setting_info = {
+			.sensor_scenario_usage = NORMAL_MASK,
+			.equivalent_fps = 24,
+		},
+	},
+	{ /* 3264x2448 @30FPS  */
+		.frame_desc = frame_desc_cus10,
+		.num_entries = ARRAY_SIZE(frame_desc_cus10),
+		.mode_setting_table = zhuquec2wide_custom10_setting,
+		.mode_setting_len = ARRAY_SIZE(zhuquec2wide_custom10_setting),
+		.hdr_mode = HDR_RAW_LBMF,
+		.raw_cnt = 2,
+		.exp_cnt = 2,
+		.pclk = 36000000,
+		.linelength = 460,
+		.framelength = 2608,
+		.max_framerate = 300,
+		.mipi_pixel_rate = 288000000,
+		.readout_length = 0,
+		.read_margin = 0,
+		.framelength_step = 4,
+		.coarse_integ_step = 4,
+		.min_exposure_line = 4,
+		.imgsensor_winsize_info = {
+			.full_w = 3280,
+			.full_h = 2464,
+			.x0_offset = 8,
+			.y0_offset = 8,
+			.w0_size = 3264,
+			.h0_size = 2448,
+			.scale_w = 1632,
+			.scale_h = 1224,
+			.x1_offset = 0,
+			.y1_offset = 0,
+			.w1_size = 1632,
+			.h1_size = 1224,
+			.x2_tg_offset = 0,
+			.y2_tg_offset = 0,
+			.w2_tg_size = 1632,
+			.h2_tg_size = 1224,
+		},
+		.ae_binning_ratio = 1,
+		.delay_frame = 2,
+		.csi_param = {},
+		.sensor_setting_info = {
+			.sensor_scenario_usage = UNUSE_MASK,
+			.equivalent_fps = 30,
+		},
+	},
+};
+
+static struct subdrv_static_ctx static_ctx = {
+	.sensor_id = ZHUQUEC2WIDE_SENSOR_ID,
+	.reg_addr_sensor_id = {0x0000}, /*page0, 0x00, 0x01, 0x02, 0x03*/
+	.i2c_addr_table = {0x6C, 0xFF},
+	.i2c_burst_write_support = TRUE,
+	.i2c_transfer_data_type = I2C_DT_ADDR_8_DATA_8,
+	.eeprom_info = eeprom_info,
+	.eeprom_num = ARRAY_SIZE(eeprom_info),
+	.resolution = {3264, 2448},
+	.mirror = IMAGE_HV_MIRROR,
+
+	.mclk = 24,
+	.isp_driving_current = ISP_DRIVING_4MA,
+	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
+	.mipi_sensor_type = MIPI_OPHY_NCSI2,
+	.mipi_lane_num = SENSOR_MIPI_2_LANE,
+	.ob_pedestal = 0x40,
+
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_R,
+	.ana_gain_def = BASEGAIN * 1,
+	.ana_gain_min = BASEGAIN * 1,
+	.ana_gain_max = BASEGAIN * 15.5,
+	.ana_gain_type = 1, /*0-SONY; 1-OV; 2 - SUMSUN; 3 -HYNIX; 4 -GC*/
+	.ana_gain_step = 1,
+	.ana_gain_table = zhuquec2wide_ana_gain_table,
+	.ana_gain_table_size = sizeof(zhuquec2wide_ana_gain_table),
+	.min_gain_iso = 100,
+	.exposure_def = 0x3D0,
+	.exposure_min = 4,
+	.exposure_max =  0x23FFFF,
+	.exposure_step = 4,
+	.exposure_margin = 20,
+
+	.frame_length_max = 0x23FFFF,
+	.ae_effective_frame = 2,
+	.frame_time_delay_frame = 2,
+	.start_exposure_offset = 2154000,
+	.pdaf_type = PDAF_SUPPORT_NA,
+	.hdr_type = HDR_SUPPORT_LBMF,
+	.g_gain2reg = get_gain2reg,
+	.s_gph = set_group_hold,
+
+/*	.reg_addr_stream = 0x0100,
+	.reg_addr_mirror_flip = 0x0101,
+	.reg_addr_exposure = {
+			{0x0102, 0x0103},
+	},*/
+	.long_exposure_support = FALSE,
+	.reg_addr_exposure_lshift = 0,
+/*	.reg_addr_ana_gain = {
+			{0x0204, 0x0205},
+	},
+	.reg_addr_frame_length = {0x0340, 0x0341},*/
+	.reg_addr_auto_extend = 0,
+	.reg_addr_frame_count = PARAM_UNDEFINED,
+/*	.reg_addr_fast_mode = 0x3010,*/
+
+	.init_setting_table = zhuquec2wide_init_setting,
+	.init_setting_len = ARRAY_SIZE(zhuquec2wide_init_setting),
+	.mode = mode_struct,
+	.sensor_mode_num = ARRAY_SIZE(mode_struct),
+	.list = feature_control_list,
+	.list_len = ARRAY_SIZE(feature_control_list),
+
+	.checksum_value = 0xD1EFF68B,
+};
+
+static struct subdrv_ops ops = {
+	.get_id = get_imgsensor_id,
+	.init_ctx = init_ctx,
+	.open = open,
+	.get_info = common_get_info,
+	.get_resolution = common_get_resolution,
+	.control = zhuquec2wide_common_control,
+	.feature_control = common_feature_control,
+	.close = common_close,
+	.get_frame_desc = common_get_frame_desc,
+	.get_temp = common_get_temp,
+	.get_csi_param = common_get_csi_param,
+	.vsync_notify = vsync_notify,
+	.update_sof_cnt = common_update_sof_cnt,
+};
+
+static struct subdrv_pw_seq_entry pw_seq[] = {
+	{HW_ID_MCLK, 24, 0},
+	{HW_ID_RST, 0, 6},
+	{HW_ID_DOVDD, 1800000, 0},
+	{HW_ID_AVDD, 2800000, 2},
+	{HW_ID_DVDD, 1200000, 5},
+	{HW_ID_AFVDD, 2800000, 0},
+	{HW_ID_RST, 1, 0},
+	{HW_ID_MCLK_DRIVING_CURRENT, 4, 8},
+};
+
+static struct subdrv_pw_seq_entry oplus_pw_seq[] = {
+	{HW_ID_MCLK, 24, 0},
+	{HW_ID_RST, 0, 1},
+	{HW_ID_DOVDD, 1800000, 0},
+	{HW_ID_AVDD, 2800000, 2},
+	{HW_ID_DVDD, 1200000, 5},
+	{HW_ID_AFVDD, 2800000, 0},
+	{HW_ID_RST, 1, 0},
+	{HW_ID_MCLK_DRIVING_CURRENT, 4, 8},
+};
+
+struct subdrv_entry zhuquec2wide_mipi_raw_entry = {
+	.name = SENSOR_NAME,
+	.id = ZHUQUEC2WIDE_SENSOR_ID,
+	.pw_seq = pw_seq,
+	.pw_seq_cnt = ARRAY_SIZE(pw_seq),
+	.ops = &ops,
+};
+
+/* FUNCTION */
+
+static void streaming_ctrl(struct subdrv_ctx *ctx, bool enable)
+{
+	check_current_scenario_id_bound(ctx);
+
+	if (enable) {
+		/* sw power up begin */
+		subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x00);
+		subdrv_i2c_wr_u8_u8(ctx, 0x21, 0x0e);
+		subdrv_i2c_wr_u8_u8(ctx, 0x21, 0x00);
+		/* sw power up end */
+		subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x01);
+		subdrv_i2c_wr_u8_u8(ctx, 0x01, 0x03);
+		subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x00);
+		subdrv_i2c_wr_u8_u8(ctx, 0x20, 0x0f);
+		subdrv_i2c_wr_u8_u8(ctx, 0xe7, 0x03);
+		subdrv_i2c_wr_u8_u8(ctx, 0xe7, 0x00);
+		subdrv_i2c_wr_u8_u8(ctx, 0xc2, 0x30);
+		/* drop one frame begin */
+		subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x01);
+		subdrv_i2c_wr_u8_u8(ctx, 0x15, 0x10);
+		subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x00);
+		/* drop one frame end */
+		subdrv_i2c_wr_u8_u8(ctx, 0xa0, 0x01);
+	} else {
+		subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x00);
+		subdrv_i2c_wr_u8_u8(ctx, 0xa0, 0x00);
+		subdrv_i2c_wr_u8_u8(ctx, 0x20, 0x0b);
+		/* add for drop frame begin */
+		subdrv_i2c_wr_u8_u8(ctx, 0xe7, 0x03);
+		subdrv_i2c_wr_u8_u8(ctx, 0xe7, 0x00);
+		/* add for drop frame end */
+		/* sw power down begin */
+		subdrv_i2c_wr_u8_u8(ctx, 0xc2, 0x32);
+		subdrv_i2c_wr_u8_u8(ctx, 0x21, 0x0f);
+		/* sw power down end */
+	}
+
+	ctx->is_streaming = enable;
+	DRV_LOG(ctx, "X! enable:%u\n", enable);
+}
+
+static int zhuquec2wide_streaming_resume(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+		DRV_LOG(ctx, "SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%u\n", *(u32 *)para);
+		if (*(u32 *)para)
+			zhuquec2wide_set_shutter_convert(ctx, *(u32 *)para);
+		streaming_ctrl(ctx, true);
+
+		return 0;
+}
+
+static int zhuquec2wide_streaming_suspend(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+		DRV_LOG(ctx, "streaming control para:%d\n", *para);
+		streaming_ctrl(ctx, false);
+
+		return 0;
+}
+static unsigned int read_zhuquec2wide_eeprom_info(struct subdrv_ctx *ctx, kal_uint16 meta_id,
+	BYTE *data, int size)
+{
+	kal_uint16 addr;
+	int readsize;
+
+	if (meta_id != zhuquec2wide_eeprom_info[meta_id].meta)
+		return -1;
+
+	if (size != zhuquec2wide_eeprom_info[meta_id].size)
+		return -1;
+
+	addr = zhuquec2wide_eeprom_info[meta_id].start;
+	readsize = zhuquec2wide_eeprom_info[meta_id].size;
+
+	if(!read_cmos_eeprom_p8(ctx, addr, data, readsize)) {
+		DRV_LOGE(ctx, "read meta_id(%d) failed", meta_id);
+	}
+
+	return 0;
+}
+
+static struct eeprom_addr_table_struct oplus_eeprom_addr_table = {
+	.i2c_read_id = 0xA3,
+	.i2c_write_id = 0xA2,
+
+	.addr_modinfo = 0x0000,
+	.addr_sensorid = 0x0006,
+	.addr_lens = 0x0008,
+	.addr_vcm = 0x000A,
+	.addr_modinfoflag = 0x0010,
+
+	.addr_af = 0x0092,
+	.addr_afmacro = 0x0092,
+	.addr_afinf = 0x0094,
+	.addr_afflag = 0x0098,
+
+	.addr_qrcode = 0x00B0,
+	.addr_qrcodeflag = 0x00C7,
+};
+
+static struct SENSOR_OTP_INFO_STRUCT cloud_otp_info[OPLUS_CAM_CAL_DATA_MAX] = {
+	{
+		.OtpInfoLen = 1,
+		.OtpInfo = {{0x0000, 17}}, /*{addr_modinfo, addr_modinfolen}*/
+	}, /*OPLUS_CAM_CAL_DATA_MODULE_VERSION*/
+	{
+		.OtpInfoLen = 1,
+		.OtpInfo = {{0x0000, 17}}, /*{addr_modinfo, addr_modinfolen}*/
+	}, /*OPLUS_CAM_CAL_DATA_PART_NUMBER*/
+	{
+		.OtpInfoLen = 1,
+		.OtpInfo = {{0x0b00, 1868}},
+	}, /*OPLUS_CAM_CAL_DATA_SHADING_TABLE--LSC*/
+	{
+		.OtpInfoLen = 5,
+		.OtpInfo = {{0x0020, 16}, {0x0044, 16}, {0x0060, 4}, {0x006c, 4}, {0x0092, 6}},
+		.isAFCodeOffset = KAL_TRUE,
+		.AFLeftOffsetLen = 7,
+		.AFRightOffsetLen = 1,
+	}, /*OPLUS_CAM_CAL_DATA_3A_GAIN-awb5000\awb2850\awb5000Light\awb2850light\af*/
+	{
+		.OtpInfoLen = 0,
+	}, /*OPLUS_CAM_CAL_DATA_PDAF*/
+	{
+		.OtpInfoLen = 8,
+		.OtpInfo = {{0x0000, 17}, {0x0006, 2}, {0x0008, 2}, {0x000a, 2}, {0x0092, 7}, {0x0092, 2}, {0x0094, 2}, {0x00b0, 24}},
+		.isAFCodeOffset = KAL_TRUE,
+		.AFLeftOffsetLen = 7,
+		.AFRightOffsetLen = 1,
+	}, /*OPLUS_CAM_CAL_DATA_CAMERA_INFO-modid\sensor\lens\vcmid\af\macpos\infpos\qrcode\*/
+	{
+		.OtpInfoLen = 1,
+		.OtpInfo = {{0x0008, 2}},
+	}, /*OPLUS_CAM_CAL_DATA_DUMP*/
+	{
+		.OtpInfoLen = 1,
+		.OtpInfo = {{0x0008, 2}},
+	}, /*OPLUS_CAM_CAL_DATA_LENS_ID*/
+	{
+		.OtpInfoLen = 0,
+	}, /*OPLUS_CAM_CAL_DATA_QSC*/
+	{
+		.OtpInfoLen = 0,
+	}, /*OPLUS_CAM_CAL_DATA_LRC*/
+	{
+		.OtpInfoLen = 1,
+		.OtpInfo = {{0x0000, 8192}},
+	}, /*OPLUS_CAM_CAL_DATA_ALL*/
+};
+
+static int zhuquec2wide_get_cloud_otp_info(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	u64 *feature_data = (u64 *)para;
+	struct SENSOR_OTP_INFO_STRUCT *cloudinfo;
+	LOG_INF("SENSOR_FEATURE_GET_CLOUD_OTP_INFO otp_type:%d", (UINT32)(*feature_data));
+	cloudinfo = (struct SENSOR_OTP_INFO_STRUCT *)(uintptr_t)(*(feature_data + 1));
+	switch (*feature_data) {
+	case OPLUS_CAM_CAL_DATA_MODULE_VERSION:
+	case OPLUS_CAM_CAL_DATA_PART_NUMBER:
+	case OPLUS_CAM_CAL_DATA_SHADING_TABLE:
+	case OPLUS_CAM_CAL_DATA_3A_GAIN:
+	case OPLUS_CAM_CAL_DATA_PDAF:
+	case OPLUS_CAM_CAL_DATA_CAMERA_INFO:
+	case OPLUS_CAM_CAL_DATA_DUMP:
+	case OPLUS_CAM_CAL_DATA_LENS_ID:
+	case OPLUS_CAM_CAL_DATA_QSC:
+	case OPLUS_CAM_CAL_DATA_LRC:
+	case OPLUS_CAM_CAL_DATA_ALL:
+		memcpy((void *)cloudinfo, (void *)&cloud_otp_info[*feature_data], sizeof(struct SENSOR_OTP_INFO_STRUCT));
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+
+static struct oplus_eeprom_info_struct  oplus_eeprom_info = {0};
+
+static int zhuquec2wide_get_eeprom_common_data(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	struct oplus_eeprom_info_struct* infoPtr;
+	memcpy(para, (u8*)(&oplus_eeprom_info), sizeof(oplus_eeprom_info));
+	infoPtr = (struct oplus_eeprom_info_struct*)(para);
+	*len = sizeof(oplus_eeprom_info);
+	infoPtr->afInfo[0] = (kal_uint8)((infoPtr->afInfo[1] << 7) | (infoPtr->afInfo[0] >> 1));
+	infoPtr->afInfo[1] = (kal_uint8)(infoPtr->afInfo[1] >> 1);
+	infoPtr->afInfo[2] = (kal_uint8)((infoPtr->afInfo[3] << 7) | (infoPtr->afInfo[2] >> 1));
+	infoPtr->afInfo[3] = (kal_uint8)(infoPtr->afInfo[3] >> 1);
+	infoPtr->afInfo[4] = (kal_uint8)((infoPtr->afInfo[5] << 7) | (infoPtr->afInfo[4] >> 1));
+	infoPtr->afInfo[5] = (kal_uint8)(infoPtr->afInfo[5] >> 1);
+
+	return 0;
+}
+
+static kal_uint16 read_cmos_eeprom_8(struct subdrv_ctx *ctx, kal_uint16 addr)
+{
+	kal_uint16 get_byte = 0;
+
+	adaptor_i2c_rd_u8(ctx->i2c_client, ZHUQUEC2WIDE_EEPROM_I2C_ADDR >> 1, addr, (u8 *)&get_byte);
+	return get_byte;
+}
+
+static kal_int32 table_write_eeprom_30Bytes(struct subdrv_ctx *ctx,
+		kal_uint16 addr, kal_uint8 *para, kal_uint32 len)
+{
+	kal_int32 ret = ERROR_NONE;
+	ret = adaptor_i2c_wr_p8(ctx->i2c_client, ZHUQUEC2WIDE_EEPROM_I2C_ADDR >> 1,
+			addr, para, len);
+
+	return ret;
+}
+
+static kal_int32 write_eeprom_protect(struct subdrv_ctx *ctx, kal_uint16 enable)
+{
+	kal_int32 ret = ERROR_NONE;
+	kal_uint16 reg = 0xE000;
+	if (enable) {
+		adaptor_i2c_wr_u8(ctx->i2c_client, ZHUQUEC2WIDE_EEPROM_I2C_ADDR >> 1, reg, 0x03);
+	}
+	else {
+		adaptor_i2c_wr_u8(ctx->i2c_client, ZHUQUEC2WIDE_EEPROM_I2C_ADDR >> 1, reg, 0x02);
+	}
+
+	return ret;
+}
+
+static kal_uint16 get_64align_addr(kal_uint16 data_base) {
+	kal_uint16 multiple = 0;
+	kal_uint16 surplus = 0;
+	kal_uint16 addr_64align = 0;
+
+	multiple = data_base / 64;
+	surplus = data_base % 64;
+	if(surplus) {
+		addr_64align = (multiple + 1) * 64;
+	} else {
+		addr_64align = multiple * 64;
+	}
+	return addr_64align;
+}
+
+static kal_int32 eeprom_table_write(struct subdrv_ctx *ctx, kal_uint16 data_base, kal_uint8 *pData, kal_uint16 data_length) {
+	kal_uint16 idx;
+	kal_uint16 idy;
+	kal_int32 ret = ERROR_NONE;
+	UINT32 i = 0;
+
+	idx = data_length/WRITE_DATA_MAX_LENGTH;
+	idy = data_length%WRITE_DATA_MAX_LENGTH;
+
+	LOG_INF("[test] data_base(0x%x) data_length(%d) idx(%d) idy(%d)\n", data_base, data_length, idx, idy);
+
+	for (i = 0; i < idx; i++) {
+		ret = table_write_eeprom_30Bytes(ctx, (data_base + WRITE_DATA_MAX_LENGTH * i),
+				&pData[WRITE_DATA_MAX_LENGTH*i], WRITE_DATA_MAX_LENGTH);
+		if (ret != ERROR_NONE) {
+			LOG_INF("write_eeprom error: i=%d\n", i);
+			return -1;
+		}
+		msleep(6);
+	}
+
+	msleep(6);
+	if(idy) {
+		ret = table_write_eeprom_30Bytes(ctx, (data_base + WRITE_DATA_MAX_LENGTH*idx),
+				&pData[WRITE_DATA_MAX_LENGTH*idx], idy);
+		if (ret != ERROR_NONE) {
+			LOG_INF("write_eeprom error: idx= %d idy= %d\n", idx, idy);
+			return -1;
+		}
+	}
+	return 0;
+}
+
+static kal_int32 eeprom_64align_write(struct subdrv_ctx *ctx, kal_uint16 data_base, kal_uint8 *pData, kal_uint16 data_length) {
+	kal_uint16 addr_64align = 0;
+	kal_uint16 part1_length = 0;
+	kal_uint16 part2_length = 0;
+	kal_int32 ret = ERROR_NONE;
+
+	addr_64align = get_64align_addr(data_base);
+
+	part1_length = addr_64align - data_base;
+	if(part1_length > data_length) {
+		part1_length = data_length;
+	}
+	part2_length = data_length - part1_length;
+
+	write_eeprom_protect(ctx, 0);
+	msleep(6);
+
+	if (part1_length) {
+		ret = eeprom_table_write(ctx, data_base, pData, part1_length);
+		if (ret == -1) {
+			/* open write protect */
+			write_eeprom_protect(ctx, 1);
+			LOG_INF("write_eeprom error part1\n");
+			msleep(6);
+			return -1;
+		}
+	}
+
+	msleep(6);
+	if (part2_length) {
+		ret = eeprom_table_write(ctx, addr_64align, pData + part1_length, part2_length);
+		if (ret == -1) {
+			/* open write protect */
+			write_eeprom_protect(ctx, 1);
+			LOG_INF("write_eeprom error part2\n");
+			msleep(6);
+			return -1;
+		}
+	}
+	msleep(6);
+	write_eeprom_protect(ctx, 1);
+	msleep(6);
+
+	return 0;
+}
+
+static kal_int32 write_Module_data(struct subdrv_ctx *ctx,
+			ACDK_SENSOR_ENGMODE_STEREO_STRUCT * pStereodata)
+{
+	kal_int32  ret = ERROR_NONE;
+	kal_uint16 data_base, data_length;
+	kal_uint8 *pData;
+
+	if(pStereodata != NULL) {
+		LOG_INF("SET_SENSOR_OTP: 0x%x %d 0x%x %d\n",
+					   pStereodata->uSensorId,
+					   pStereodata->uDeviceId,
+					   pStereodata->baseAddr,
+					   pStereodata->dataLength);
+
+		data_base = pStereodata->baseAddr;
+		data_length = pStereodata->dataLength;
+		pData = pStereodata->uData;
+		if ((pStereodata->uSensorId == ZHUQUEC2WIDE_SENSOR_ID || pStereodata->uSensorId == ZHUQUES2WIDE_SENSOR_ID)
+			&& (data_length == CALI_DATA_SLAVE_LENGTH) && (data_base == ZHUQUEC2WIDE_STEREO_START_ADDR)) {
+			/*LOG_INF("Write: %x %x %x %x\n", pData[0], pData[39], pData[40], pData[1556]);
+
+			eeprom_64align_write(ctx, data_base, pData, data_length);
+
+			LOG_INF("com_0:0x%x\n", read_cmos_eeprom_8(ctx, data_base));
+			LOG_INF("com_39:0x%x\n", read_cmos_eeprom_8(ctx, data_base+39));
+			LOG_INF("innal_40:0x%x\n", read_cmos_eeprom_8(ctx, data_base+40));
+			LOG_INF("innal_1556:0x%x\n", read_cmos_eeprom_8(ctx, data_base+1556));
+			LOG_INF("write_Module_data Write end\n");*/
+
+		} else if ((pStereodata->uSensorId == ZHUQUEC2WIDE_SENSOR_ID || pStereodata->uSensorId == ZHUQUES2WIDE_SENSOR_ID)
+			&& (data_length < AESYNC_DATA_LENGTH_TOTAL) && (data_base == ZHUQUEC2WIDE_AESYNC_START_ADDR)) {
+			LOG_INF("write main aesync: %x %x %x %x %x %x %x %x\n", pData[0], pData[1],
+				pData[2], pData[3], pData[4], pData[5], pData[6], pData[7]);
+
+			eeprom_64align_write(ctx, data_base, pData, data_length);
+
+			LOG_INF("readback main aesync: %x %x %x %x %x %x %x %x\n",
+					read_cmos_eeprom_8(ctx, ZHUQUEC2WIDE_AESYNC_START_ADDR),
+					read_cmos_eeprom_8(ctx, ZHUQUEC2WIDE_AESYNC_START_ADDR+1),
+					read_cmos_eeprom_8(ctx, ZHUQUEC2WIDE_AESYNC_START_ADDR+2),
+					read_cmos_eeprom_8(ctx, ZHUQUEC2WIDE_AESYNC_START_ADDR+3),
+					read_cmos_eeprom_8(ctx, ZHUQUEC2WIDE_AESYNC_START_ADDR+4),
+					read_cmos_eeprom_8(ctx, ZHUQUEC2WIDE_AESYNC_START_ADDR+5),
+					read_cmos_eeprom_8(ctx, ZHUQUEC2WIDE_AESYNC_START_ADDR+6),
+					read_cmos_eeprom_8(ctx, ZHUQUEC2WIDE_AESYNC_START_ADDR+7));
+			LOG_INF("AESync write_Module_data Write end\n");
+		} else {
+			LOG_INF("Invalid Sensor id:0x%x write eeprom\n", pStereodata->uSensorId);
+			return -1;
+		}
+	} else {
+		LOG_INF("omegas2 write_Module_data pStereodata is null\n");
+		return -1;
+	}
+	return ret;
+}
+
+static int zhuquec2wide_set_eeprom_calibration(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	int ret = ERROR_NONE;
+	ret = write_Module_data(ctx, (ACDK_SENSOR_ENGMODE_STEREO_STRUCT *)(para));
+	if (ret != ERROR_NONE) {
+		*len = (u32)-1; /*write eeprom failed*/
+		LOG_INF("ret=%d\n", ret);
+	}
+	return 0;
+}
+
+static int zhuquec2wide_get_eeprom_calibration(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	UINT16 *feature_data_16 = (UINT16 *) para;
+	UINT32 *feature_return_para_32 = (UINT32 *) para;
+	if(*len > CALI_DATA_SLAVE_LENGTH)
+		*len = CALI_DATA_SLAVE_LENGTH;
+	LOG_INF("feature_data mode:%d  lens:%d", *feature_data_16, *len);
+	read_zhuquec2wide_eeprom_info(ctx, EEPROM_META_STEREO_DATA,
+			(BYTE *)feature_return_para_32, *len);
+	return 0;
+}
+
+static bool read_cmos_eeprom_p8(struct subdrv_ctx *ctx, kal_uint16 addr,
+					BYTE *data, int size)
+{
+	if (adaptor_i2c_rd_p8(ctx->i2c_client, ZHUQUEC2WIDE_EEPROM_I2C_ADDR >> 1,
+			addr, data, size) < 0) {
+		return false;
+	}
+	return true;
+}
+
+static void read_otp_info(struct subdrv_ctx *ctx)
+{
+	DRV_LOGE(ctx, "zhuquec2wide read_otp_info begin\n");
+	read_cmos_eeprom_p8(ctx, 0, otp_data_checksum, OTP_SIZE);
+	DRV_LOGE(ctx, "zhuquec2wide read_otp_info end\n");
+}
+
+static int zhuquec2wide_get_otp_checksum_data(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	u32 *feature_return_para_32 = (u32 *)para;
+	DRV_LOGE(ctx, "get otp data");
+	if (otp_data_checksum[0] == 0) {
+		read_otp_info(ctx);
+	} else {
+		DRV_LOG(ctx, "otp data has already read");
+	}
+	memcpy(feature_return_para_32, (UINT32 *)otp_data_checksum, sizeof(otp_data_checksum));
+	*len = sizeof(otp_data_checksum);
+	return 0;
+}
+
+static int zhuquec2wide_check_sensor_id(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	get_imgsensor_id(ctx, (u32 *)para);
+	return 0;
+}
+
+
+static kal_uint32 return_sensor_id(struct subdrv_ctx *ctx)
+{
+	subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x00);
+
+	return ((subdrv_i2c_rd_u8_u8(ctx, 0x00) << 24) | (subdrv_i2c_rd_u8_u8(ctx, 0x01) << 16)
+		  | (subdrv_i2c_rd_u8_u8(ctx, 0x02) << 8)  |  subdrv_i2c_rd_u8_u8(ctx, 0x03));
+}
+
+static u16 zhuquec2wide_unique_sensorid[] = {
+	0xfd, 0x00,
+	0x20, 0x0f,
+	0xe7, 0x03,
+	0xe7, 0x00,
+	0xfd, 0x03,
+	0x84, 0x40,
+	0x88, 0x00,
+	0x89, 0x00,
+	0x8a, 0x00,
+	0x8b, 0x0f,
+	0x81, 0x01,
+	0xfd, 0x08,
+};
+
+static int zhuquec2wide_get_unique_sensorid(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	u32 *feature_return_para_32 = (u32 *)para;
+	*len = ZHUQUEC2WIDE_UNIQUE_SENSOR_ID_LENGTH;
+	memcpy(feature_return_para_32, zhuquec2wide_unique_id,
+		ZHUQUEC2WIDE_UNIQUE_SENSOR_ID_LENGTH);
+	LOG_INF("para :%x, get unique sensorid", *para);
+	return 0;
+}
+
+static void read_unique_sensorid(struct subdrv_ctx *ctx)
+{
+	kal_uint8 i = 0;
+	LOG_INF("read sensor unique sensorid");
+	subdrv_i2c_wr_regs_u8_u8(ctx, zhuquec2wide_unique_sensorid, ARRAY_SIZE(zhuquec2wide_unique_sensorid));
+	msleep(50);
+	subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x08);
+	for (i = 0; i < ZHUQUEC2WIDE_UNIQUE_SENSOR_ID_LENGTH; i++) {
+		zhuquec2wide_unique_id[i] =  subdrv_i2c_rd_u8_u8(ctx, ZHUQUEC2WIDE_UNIQUE_SENSOR_ID_ADDR + i);
+	}
+}
+
+static int get_imgsensor_id(struct subdrv_ctx *ctx, u32 *sensor_id)
+{
+	u8 i = 0;
+	u8 retry = 2;
+	static bool first_read = KAL_TRUE;
+
+	while (ctx->s_ctx.i2c_addr_table[i] != 0xFF) {
+		ctx->i2c_write_id = ctx->s_ctx.i2c_addr_table[i];
+		do {
+			*sensor_id = return_sensor_id(ctx);
+			DRV_LOG(ctx, "i2c_write_id(0x%x) sensor_id(0x%x/0x%x)\n",
+				ctx->i2c_write_id, *sensor_id, ctx->s_ctx.sensor_id);
+			if (*sensor_id == SENSOR_ID) {
+				get_imgsensor_id_from_dts(ctx, sensor_id);
+				if (first_read) {
+					read_eeprom_common_data(ctx, &oplus_eeprom_info, oplus_eeprom_addr_table);
+					read_unique_sensorid(ctx);
+					memcpy(&pw_seq, &oplus_pw_seq, sizeof(oplus_pw_seq));
+					LOG_INF("rst delay = %d, func: %s, line: %d\n", pw_seq[1].delay, __FUNCTION__, __LINE__);
+					first_read = KAL_FALSE;
+				}
+				return ERROR_NONE;
+			}
+			DRV_LOGE(ctx, "Read sensor id fail. i2c_write_id: 0x%x\n", ctx->i2c_write_id);
+			DRV_LOG(ctx, "sensor_id = 0x%x, ctx->s_ctx.sensor_id = 0x%x\n",
+				*sensor_id, ctx->s_ctx.sensor_id);
+			retry--;
+		} while (retry > 0);
+		i++;
+		retry = 2;
+	}
+	if (*sensor_id != ctx->s_ctx.sensor_id) {
+		*sensor_id = 0xFFFFFFFF;
+		return ERROR_SENSOR_CONNECT_FAIL;
+	}
+	return ERROR_NONE;
+}
+
+static int open(struct subdrv_ctx *ctx)
+{
+	u32 sensor_id = 0;
+	u32 scenario_id = 0;
+
+	/* get sensor id */
+	if (get_imgsensor_id(ctx, &sensor_id) != ERROR_NONE)
+		return ERROR_SENSOR_CONNECT_FAIL;
+
+	/* initail setting */
+	subdrv_i2c_wr_regs_u8_u8(ctx, zhuquec2wide_soft_reset, ARRAY_SIZE(zhuquec2wide_soft_reset));
+	mdelay(3);
+	subdrv_i2c_wr_regs_u8_u8(ctx, zhuquec2wide_init_setting, ARRAY_SIZE(zhuquec2wide_init_setting));
+
+	memset(ctx->exposure, 0, sizeof(ctx->exposure));
+	memset(ctx->ana_gain, 0, sizeof(ctx->gain));
+	ctx->exposure[0] = ctx->s_ctx.exposure_def;
+	ctx->ana_gain[0] = ctx->s_ctx.ana_gain_def;
+	ctx->current_scenario_id = scenario_id;
+	ctx->pclk = ctx->s_ctx.mode[scenario_id].pclk;
+	ctx->line_length = ctx->s_ctx.mode[scenario_id].linelength;
+	ctx->frame_length = ctx->s_ctx.mode[scenario_id].framelength;
+	ctx->current_fps = 10 * ctx->pclk / ctx->line_length / ctx->frame_length;
+	ctx->readout_length = ctx->s_ctx.mode[scenario_id].readout_length;
+	ctx->read_margin = ctx->s_ctx.mode[scenario_id].read_margin;
+	ctx->min_frame_length = ctx->frame_length;
+	ctx->autoflicker_en = FALSE;
+	ctx->test_pattern = 0;
+	ctx->ihdr_mode = 0;
+	ctx->pdaf_mode = 0;
+	ctx->hdr_mode = 0;
+	ctx->extend_frame_length_en = 0;
+	ctx->is_seamless = 0;
+	ctx->fast_mode_on = 0;
+	ctx->sof_cnt = 0;
+	ctx->ref_sof_cnt = 0;
+	ctx->is_streaming = 0;
+
+	return ERROR_NONE;
+}
+
+static void set_group_hold(void *arg, u8 en)
+{
+	if(!en) {  /*fresh*/
+		subdrv_i2c_wr_u8_u8(g_ctx, 0xfd, 0x01);
+		subdrv_i2c_wr_u8_u8(g_ctx, 0x01, 0x01);
+	}
+}
+
+static u16 get_gain2reg(u32 gain)
+{
+	return  0x10 * gain/BASEGAIN;
+}
+
+static int g_diff_frame_length[] = {
+	2504,  /*preview*/
+	2504,  /*capture*/
+	2504,  /*normal video*/
+	1252,  /*his video*/
+	1252,  /*slim video*/
+	2504,  /*custom1*/
+	1252,  /*custom2*/
+	2504,  /*custom3*/
+	2504,  /*custom4*/
+	2504,  /*custom5*/
+	2504,  /*custom6*/
+	1252,  /*custom7*/
+	1160,  /*custom8*/
+	2504,  /*custom9*/
+};
+
+void zhuquec2wide_write_frame_length(struct subdrv_ctx *ctx, u32 fll)
+{
+	u32 fll_step = 0;
+	u32 vblank = 0;
+	u32 diff_frame_length;
+	check_current_scenario_id_bound(ctx);
+
+	fll_step = ctx->s_ctx.mode[ctx->current_scenario_id].framelength_step;
+	if(ctx->current_scenario_id  >= ARRAY_SIZE(g_diff_frame_length)) {
+		diff_frame_length = g_diff_frame_length[0];
+		DRV_LOGE(ctx, "mode(%d) need config g_diff_frame_length", ctx->current_scenario_id);
+	} else {
+		diff_frame_length = g_diff_frame_length[ctx->current_scenario_id] ?
+			g_diff_frame_length[ctx->current_scenario_id] : g_diff_frame_length[0];
+	}
+	ctx->frame_length = fll;
+
+	if (fll_step)
+		fll = round_up(fll, fll_step);
+
+	/* write framelength */
+	vblank = (fll - diff_frame_length) * 2;
+
+	if(vblank < 65535) {
+		subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x01);
+		subdrv_i2c_wr_u8_u8(ctx, 0x05, (vblank >> 8) & 0xFF);
+		subdrv_i2c_wr_u8_u8(ctx, 0x06,  vblank & 0xFF);
+	/*	subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x01);
+		subdrv_i2c_wr_u8_u8(ctx, 0x01, 0x01);	*/
+	}
+
+	/* update FL RG value after setting buffer for writting RG */
+	ctx->frame_length_rg = ctx->frame_length;
+
+	DRV_LOG(ctx, "ctx->frame_length(%d), diff_frame_length(%d), vblank(%d)\n",
+		ctx->frame_length, diff_frame_length, vblank);
+	DRV_LOG(ctx, "fll[0x%x], fll_step:%u ctx->extend_frame_length_en:%d\n",
+		fll, fll_step, ctx->extend_frame_length_en);
+}
+
+void zhuquec2wide_get_min_shutter_by_scenario(struct subdrv_ctx *ctx,
+		enum SENSOR_SCENARIO_ID_ENUM scenario_id,
+		u64 *min_shutter, u64 *exposure_step)
+{
+	if (scenario_id >= ctx->s_ctx.sensor_mode_num) {
+		DRV_LOGE(ctx, "invalid sid:%u, mode_num:%u set default\n",
+			scenario_id, ctx->s_ctx.sensor_mode_num);
+		scenario_id = 0;
+	}
+	check_current_scenario_id_bound(ctx);
+	DRV_LOG(ctx, "sensor_mode_num[%d]", ctx->s_ctx.sensor_mode_num);
+	if (scenario_id < ctx->s_ctx.sensor_mode_num) {
+		switch (ctx->s_ctx.mode[scenario_id].hdr_mode) {
+		case HDR_NONE:
+			if (ctx->s_ctx.mode[scenario_id].coarse_integ_step &&
+				ctx->s_ctx.mode[scenario_id].min_exposure_line) {
+				*exposure_step = ctx->s_ctx.mode[scenario_id].coarse_integ_step;
+				*min_shutter = ctx->s_ctx.mode[scenario_id].min_exposure_line;
+			} else {
+				*exposure_step = ctx->s_ctx.exposure_step;
+				*min_shutter = ctx->s_ctx.exposure_min;
+			}
+			break;
+		default:
+			*exposure_step = ctx->s_ctx.exposure_step;
+			*min_shutter = ctx->s_ctx.exposure_min;
+			break;
+		}
+	} else {
+		DRV_LOG(ctx, "over sensor_mode_num[%d], use default", ctx->s_ctx.sensor_mode_num);
+		*exposure_step = ctx->s_ctx.exposure_step;
+		*min_shutter = ctx->s_ctx.exposure_min;
+	}
+	DRV_LOG(ctx, "scenario_id[%d] exposure_step[%llu] min_shutter[%llu]\n", scenario_id, *exposure_step, *min_shutter);
+}
+
+static int zhuquec2wide_set_test_pattern(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	u32 mode = *((u32 *)para);
+	if (mode != ctx->test_pattern) {
+		if (mode) {
+			LOG_INF("%s mode(%d)", __func__, mode);
+			switch(mode) {
+			case 5:
+				subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x01);
+				subdrv_i2c_wr_u8_u8(ctx, 0x21, 0x00); /*DIG_GAIN*/
+				subdrv_i2c_wr_u8_u8(ctx, 0x22, 0x00);
+				subdrv_i2c_wr_u8_u8(ctx, 0x01, 0x01);
+				subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x07);
+				subdrv_i2c_wr_u8_u8(ctx, 0x04, 0x00); /*blc_lvl_target*/
+				subdrv_i2c_wr_u8_u8(ctx, 0x05, 0x00);
+				break;
+			default:
+				break;
+			}
+		} else {
+			LOG_INF("%s mode(%d)", __func__, mode);
+			subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x01);
+			subdrv_i2c_wr_u8_u8(ctx, 0x21, 0x02);
+			subdrv_i2c_wr_u8_u8(ctx, 0x22, 0x00);
+			subdrv_i2c_wr_u8_u8(ctx, 0x01, 0x01);
+			subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x07);
+			subdrv_i2c_wr_u8_u8(ctx, 0x04, 0x00);
+			subdrv_i2c_wr_u8_u8(ctx, 0x05, 0x40);
+		}
+		ctx->test_pattern = mode;
+	}
+
+	return ERROR_NONE;
+}
+
+static int init_ctx(struct subdrv_ctx *ctx,	struct i2c_client *i2c_client, u8 i2c_write_id)
+{
+	memcpy(&(ctx->s_ctx), &static_ctx, sizeof(struct subdrv_static_ctx));
+	subdrv_ctx_init(ctx);
+	ctx->i2c_client = i2c_client;
+	ctx->i2c_write_id = i2c_write_id;
+	g_ctx = ctx;
+
+	return 0;
+}
+
+static int zhuquec2wide_set_frame_length(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	bool gph = !ctx->is_seamless && (ctx->s_ctx.s_gph != NULL);
+	u16 frame_length = (u16) (*para);
+	if (frame_length)
+		ctx->frame_length = frame_length;
+	ctx->frame_length = max(ctx->frame_length, ctx->min_frame_length);
+	ctx->frame_length = min(ctx->frame_length, ctx->s_ctx.frame_length_max);
+
+	if (gph)
+		ctx->s_ctx.s_gph((void *)ctx, 1);
+	zhuquec2wide_write_frame_length(ctx, ctx->frame_length);
+	if (gph)
+		ctx->s_ctx.s_gph((void *)ctx, 0);
+	commit_i2c_buffer(ctx);
+
+	DRV_LOG(ctx, "fll(input/output/min):%u/%u/%u\n",
+		frame_length, ctx->frame_length, ctx->min_frame_length);
+	return 0;
+}
+
+
+static int zhuquec2wide_set_shutter_frame_length_convert(struct subdrv_ctx *ctx, u64 shutter, u32 frame_length)
+{
+	u32 fine_integ_line = 0;
+	u32 cit_step = 0;
+
+	bool gph = (ctx->s_ctx.s_gph != NULL);
+	u8 exposure_margin = ctx->s_ctx.mode[ctx->current_scenario_id].exposure_margin ?
+		ctx->s_ctx.mode[ctx->current_scenario_id].exposure_margin : ctx->s_ctx.exposure_margin;
+	DRV_LOG(ctx, "shutter:%llu, frame_length:%u  exposure_margin:%d\n", shutter, frame_length, exposure_margin);
+
+	ctx->frame_length = frame_length ? frame_length : ctx->frame_length;
+	check_current_scenario_id_bound(ctx);
+	/* check boundary of shutter */
+	fine_integ_line = ctx->s_ctx.mode[ctx->current_scenario_id].fine_integ_line;
+	shutter = FINE_INTEG_CONVERT(shutter, fine_integ_line);
+	shutter = max(shutter, (u64)ctx->s_ctx.exposure_min);
+	shutter = min(shutter, (u64)ctx->s_ctx.exposure_max);
+	/* check boundary of framelength */
+
+	cit_step = ctx->s_ctx.mode[ctx->current_scenario_id].coarse_integ_step;
+	if (cit_step)
+		shutter = round_up(shutter, cit_step);
+
+	ctx->frame_length =	max(shutter + exposure_margin, (u64)ctx->frame_length);
+	ctx->frame_length =	max((u64)ctx->min_frame_length, (u64)ctx->frame_length);
+	ctx->frame_length =	min(ctx->frame_length, ctx->s_ctx.frame_length_max);
+
+	/* restore shutter */
+	memset(ctx->exposure, 0, sizeof(ctx->exposure));
+	ctx->exposure[0] = shutter;
+	/* group hold start */
+	if (gph)
+		ctx->s_ctx.s_gph((void *)ctx, 1);
+
+	/* sw power up */
+	sw_power_control(ctx, 1);
+
+	/* write framelength */
+	if (set_auto_flicker(ctx, 0) || frame_length || !ctx->s_ctx.reg_addr_auto_extend)
+		zhuquec2wide_write_frame_length(ctx, ctx->frame_length);
+	/* write shutter */
+	subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x01);
+	subdrv_i2c_wr_u8_u8(ctx, 0x02, (shutter * 2 >> 16) & 0xFF);
+	subdrv_i2c_wr_u8_u8(ctx, 0x03, (shutter * 2 >>  8) & 0xFF);
+	subdrv_i2c_wr_u8_u8(ctx, 0x04,  shutter * 2  & 0xFF);
+/*	subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x01);
+	subdrv_i2c_wr_u8_u8(ctx, 0x01, 0x01);	*/
+
+	/* sw power down */
+	sw_power_control(ctx, 0);
+
+	DRV_LOG(ctx, "exp[0x%x], fll(input/output):%u/%u, flick_en:%u\n",
+		ctx->exposure[0], frame_length, ctx->frame_length, ctx->autoflicker_en);
+
+	if (!ctx->ae_ctrl_gph_en) {
+		if (gph)
+			ctx->s_ctx.s_gph((void *)ctx, 0);
+		/*commit_i2c_buffer(ctx);*/
+	}
+	/* group hold end */
+
+	return 0;
+}
+
+static int zhuquec2wide_set_shutter_frame_length(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	return zhuquec2wide_set_shutter_frame_length_convert(ctx, ((u64*)para)[0], ((u64*)para)[1]);
+}
+
+static int zhuquec2wide_set_shutter_convert(struct subdrv_ctx *ctx, u64 shutter)
+{
+	return zhuquec2wide_set_shutter_frame_length_convert(ctx, shutter, 0);
+}
+
+static int zhuquec2wide_set_shutter(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	return zhuquec2wide_set_shutter_frame_length_convert(ctx, ((u64*)para)[0], 0);
+}
+
+static int zhuquec2wide_set_gain_convert(struct subdrv_ctx *ctx, u32 gain)
+{
+	u16 rg_gain;
+	bool gph = (ctx->s_ctx.s_gph != NULL);
+	u32 ana_gain_min = ctx->s_ctx.mode[ctx->current_scenario_id].ana_gain_max ?
+		ctx->s_ctx.mode[ctx->current_scenario_id].ana_gain_min : ctx->ana_gain_min;
+	u32 ana_gain_max = ctx->s_ctx.mode[ctx->current_scenario_id].ana_gain_max ?
+		ctx->s_ctx.mode[ctx->current_scenario_id].ana_gain_max : ctx->ana_gain_max;
+
+	/* check boundary of gain */
+	gain = max(gain, ana_gain_min);
+	gain = min(gain, ana_gain_max);
+
+	/* mapping of gain to register value */
+	rg_gain = get_gain2reg(gain);
+
+	/* restore gain */
+	memset(ctx->ana_gain, 0, sizeof(ctx->ana_gain));
+	ctx->ana_gain[0] = gain;
+
+	/* group hold start */
+	if (gph && !ctx->ae_ctrl_gph_en)
+		ctx->s_ctx.s_gph((void *)ctx, 1);
+
+	/* sw power up */
+	sw_power_control(ctx, 1);
+	/* write gain */
+	subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x01);
+	subdrv_i2c_wr_u8_u8(ctx, 0x24, rg_gain);
+	subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x01); /*page1*/
+	subdrv_i2c_wr_u8_u8(ctx, 0x01, 0x01); /*fresh*/
+
+	/* sw power down */
+	sw_power_control(ctx, 0);
+
+	DRV_LOG(ctx, "%s gain(%d) rg_gain[0x%x]\n", __func__, gain, rg_gain);
+	if (gph)
+		ctx->s_ctx.s_gph((void *)ctx, 0);
+	/* group hold end */
+
+	return 0;
+}
+
+static int zhuquec2wide_set_gain(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	u64* feature_data = (u64*)para;
+	u32 gain = *feature_data;
+
+	return zhuquec2wide_set_gain_convert(ctx, gain);
+}
+
+void zhuquec2wide_set_dummy(struct subdrv_ctx *ctx)
+{
+}
+
+static int zhuquec2wide_set_max_framerate_by_scenario(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	enum SENSOR_SCENARIO_ID_ENUM scenario_id = (u32)((u64*)para)[0];
+	u32 framerate = (u32)((u64*)para)[1];
+	u32 frame_length;
+	u32 frame_length_step;
+
+	LOG_INF("scenario_id(%d), framerate(%d)", scenario_id, framerate);
+
+	if (scenario_id >= ctx->s_ctx.sensor_mode_num) {
+		DRV_LOG(ctx, "invalid sid:%u, mode_num:%u\n",
+			scenario_id, ctx->s_ctx.sensor_mode_num);
+		scenario_id = SENSOR_SCENARIO_ID_NORMAL_PREVIEW;
+	}
+
+	if (framerate == 0) {
+		DRV_LOG(ctx, "framerate (%u) is invalid\n", framerate);
+		return 0;
+	}
+
+	if (ctx->s_ctx.mode[scenario_id].linelength == 0) {
+		DRV_LOG(ctx, "linelength (%u) is invalid\n",
+			ctx->s_ctx.mode[scenario_id].linelength);
+		return 0;
+	}
+
+	frame_length = ctx->s_ctx.mode[scenario_id].pclk / framerate * 10
+		/ ctx->s_ctx.mode[scenario_id].linelength;
+	frame_length_step = ctx->s_ctx.mode[scenario_id].framelength_step;
+	frame_length = frame_length_step ?
+		(frame_length - (frame_length % frame_length_step)) : frame_length;
+	ctx->frame_length =
+		max(frame_length, ctx->s_ctx.mode[scenario_id].framelength);
+	ctx->frame_length = min(ctx->frame_length, ctx->s_ctx.frame_length_max);
+	ctx->current_fps = ctx->pclk / ctx->frame_length * 10 / ctx->line_length;
+	ctx->min_frame_length = ctx->frame_length;
+	DRV_LOG(ctx, "max_fps(input/output):%u/%u(sid:%u), min_fl_en:1\n",
+		framerate, ctx->current_fps, scenario_id);
+	if (ctx->s_ctx.reg_addr_auto_extend ||
+			(ctx->frame_length > (ctx->exposure[0] + ctx->s_ctx.exposure_margin))) {
+		zhuquec2wide_set_dummy(ctx);
+	}
+
+	return 0;
+}
+
+static void zhuquec2wide_set_multi_shutter_frame_length(struct subdrv_ctx *ctx,
+		u64 *shutters, u16 exp_cnt,	u16 frame_length)
+{
+	int i = 0;
+	int fine_integ_line = 0;
+	u16 last_exp_cnt = 1;
+	u32 calc_fl[3] = {0};
+	int readout_diff = 0;
+	bool gph = !ctx->is_seamless && (ctx->s_ctx.s_gph != NULL);
+	u32 rg_shutters[3] = {0};
+	u32 cit_step = 0;
+
+	ctx->frame_length = frame_length ? frame_length : ctx->min_frame_length;
+	if (exp_cnt > ARRAY_SIZE(ctx->exposure)) {
+		DRV_LOGE(ctx, "invalid exp_cnt:%u>%lu\n", exp_cnt, ARRAY_SIZE(ctx->exposure));
+		exp_cnt = ARRAY_SIZE(ctx->exposure);
+	}
+	check_current_scenario_id_bound(ctx);
+
+	/* check boundary of shutter */
+	for (i = 1; i < ARRAY_SIZE(ctx->exposure); i++)
+		last_exp_cnt += ctx->exposure[i] ? 1 : 0;
+	fine_integ_line = ctx->s_ctx.mode[ctx->current_scenario_id].fine_integ_line;
+	cit_step = ctx->s_ctx.mode[ctx->current_scenario_id].coarse_integ_step;
+	for (i = 0; i < exp_cnt; i++) {
+		shutters[i] = FINE_INTEG_CONVERT(shutters[i], fine_integ_line);
+		shutters[i] = max_t(u64, shutters[i],
+			(u64)ctx->s_ctx.mode[ctx->current_scenario_id].multi_exposure_shutter_range[i].min);
+		shutters[i] = min_t(u64, shutters[i],
+			(u64)ctx->s_ctx.mode[ctx->current_scenario_id].multi_exposure_shutter_range[i].max);
+		if (cit_step)
+			shutters[i] = roundup(shutters[i], cit_step);
+	}
+
+	/* check boundary of framelength */
+	/* - (1) previous se + previous me + current le */
+	calc_fl[0] = (u32) shutters[0];
+	for (i = 1; i < last_exp_cnt; i++)
+		calc_fl[0] += ctx->exposure[i];
+	calc_fl[0] += ctx->s_ctx.exposure_margin*exp_cnt*exp_cnt;
+
+	/* - (2) current se + current me + current le */
+	calc_fl[1] = (u32) shutters[0];
+	for (i = 1; i < exp_cnt; i++)
+		calc_fl[1] += (u32) shutters[i];
+	calc_fl[1] += ctx->s_ctx.exposure_margin*exp_cnt*exp_cnt;
+
+	/* - (3) readout time cannot be overlapped */
+	calc_fl[2] =
+		(ctx->s_ctx.mode[ctx->current_scenario_id].readout_length +
+		ctx->s_ctx.mode[ctx->current_scenario_id].read_margin);
+	if (last_exp_cnt == exp_cnt) {
+		for (i = 1; i < exp_cnt; i++) {
+			readout_diff = ctx->exposure[i] - (u32) shutters[i];
+			calc_fl[2] += readout_diff > 0 ? readout_diff : 0;
+		}
+	}
+	for (i = 0; i < ARRAY_SIZE(calc_fl); i++)
+		ctx->frame_length = max(ctx->frame_length, calc_fl[i]);
+	ctx->frame_length =	max(ctx->frame_length, ctx->min_frame_length);
+	ctx->frame_length =	min(ctx->frame_length, ctx->s_ctx.frame_length_max);
+	/* restore shutter */
+	memset(ctx->exposure, 0, sizeof(ctx->exposure));
+	for (i = 0; i < exp_cnt; i++)
+		ctx->exposure[i] = (u32) shutters[i];
+	/* group hold start */
+	if (gph)
+		ctx->s_ctx.s_gph((void *)ctx, 1);
+	/* enable auto extend */
+	if (ctx->s_ctx.reg_addr_auto_extend)
+		set_i2c_buffer(ctx, ctx->s_ctx.reg_addr_auto_extend, 0x01);
+	/* write framelength */
+	if (set_auto_flicker(ctx, 0) || frame_length || !ctx->s_ctx.reg_addr_auto_extend)
+		zhuquec2wide_write_frame_length(ctx, ctx->frame_length);
+	/* write shutter */
+	switch (exp_cnt) {
+	case 1:
+		rg_shutters[0] = (u32) shutters[0] / exp_cnt;
+		break;
+	case 2:
+		rg_shutters[0] = (u32) shutters[0] / exp_cnt;
+		rg_shutters[2] = (u32) shutters[1] / exp_cnt;
+		break;
+	case 3:
+		rg_shutters[0] = (u32) shutters[0] / exp_cnt;
+		rg_shutters[1] = (u32) shutters[1] / exp_cnt;
+		rg_shutters[2] = (u32) shutters[2] / exp_cnt;
+		break;
+	default:
+		break;
+	}
+	if (ctx->s_ctx.reg_addr_exposure_lshift != PARAM_UNDEFINED) {
+		set_i2c_buffer(ctx, ctx->s_ctx.reg_addr_exposure_lshift, 0);
+		ctx->l_shift = 0;
+	}
+	for (i = 0; i < 3; i++) {
+		if (rg_shutters[i]) {
+			/* write shutter */
+			subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x01);
+			subdrv_i2c_wr_u8_u8(ctx, 0x02, (rg_shutters[i] * 2 >> 16) & 0xFF);
+			subdrv_i2c_wr_u8_u8(ctx, 0x03, (rg_shutters[i] * 2 >>  8) & 0xFF);
+			subdrv_i2c_wr_u8_u8(ctx, 0x04,  rg_shutters[i] * 2  & 0xFF);
+		/*	subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x01);
+			subdrv_i2c_wr_u8_u8(ctx, 0x01, 0x01);	*/
+		}
+	}
+	DRV_LOG(ctx, "exp[0x%x/0x%x/0x%x], fll(input/output):%u/%u, flick_en:%d\n",
+		rg_shutters[0], rg_shutters[1], rg_shutters[2],
+		frame_length, ctx->frame_length, ctx->autoflicker_en);
+	if (!ctx->ae_ctrl_gph_en) {
+		if (gph)
+			ctx->s_ctx.s_gph((void *)ctx, 0);
+		commit_i2c_buffer(ctx);
+	}
+	/* group hold end */
+}
+
+static int zhuquec2wide_set_multi_shutter_frame_length_ctrl(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	u64* feature_data = (u64*)para;
+	zhuquec2wide_set_multi_shutter_frame_length(ctx, (u64 *)(*feature_data),
+		(u16) (*(feature_data + 1)), (u16) (*(feature_data + 2)));
+	return 0;
+}
+
+static int zhuquec2wide_extend_frame_length_convert(struct subdrv_ctx *ctx, u32 ns)
+{
+	return 0;
+}
+
+static int zhuquec2wide_extend_frame_length(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	u32 ns = (u32)((u64*)para)[0];
+
+	return zhuquec2wide_extend_frame_length_convert(ctx, ns);
+}
+static int vsync_notify(struct subdrv_ctx *ctx,	unsigned int sof_cnt)
+{
+	DRV_LOG(ctx, "sof_cnt(%u) ctx->ref_sof_cnt(%u) ctx->fast_mode_on(%d)",
+		sof_cnt, ctx->ref_sof_cnt, ctx->fast_mode_on);
+	ctx->sof_cnt = sof_cnt;
+
+	return 0;
+}
+
+static int zhuquec2wide_set_register(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	u8 page = (((MSDK_SENSOR_REG_INFO_STRUCT *)para)->RegAddr >> 8) & 0xFF;
+	u8 addr = ((MSDK_SENSOR_REG_INFO_STRUCT *)para)->RegAddr & 0xFF;
+
+
+	subdrv_i2c_wr_u8_u8(ctx, 0xfd, page);
+	subdrv_i2c_wr_u8_u8(ctx, addr, ((MSDK_SENSOR_REG_INFO_STRUCT *)para)->RegData & 0xFF);
+
+	subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x01);	/*page1*/
+	subdrv_i2c_wr_u8_u8(ctx, 0x01, 0x01);	/*fresh*/
+
+	pr_err("%s RegAddr: 0x%08x, RegData: 0x%04x (page 0x%x  addr 0x%x)\n",
+		__func__, ((MSDK_SENSOR_REG_INFO_STRUCT *)para)->RegAddr, ((MSDK_SENSOR_REG_INFO_STRUCT *)para)->RegData,
+		page, addr);
+
+	return 0;
+}
+
+static int zhuquec2wide_get_register(struct subdrv_ctx *ctx, u8 *para, u32 *len)
+{
+	u8 page = (((MSDK_SENSOR_REG_INFO_STRUCT *)para)->RegAddr >> 8) & 0xFF;
+	u8 addr = ((MSDK_SENSOR_REG_INFO_STRUCT *)para)->RegAddr & 0xFF;
+
+	subdrv_i2c_wr_u8_u8(ctx, 0xfd, page);
+	((MSDK_SENSOR_REG_INFO_STRUCT *)para)->RegData =
+		subdrv_i2c_rd_u8_u8(ctx, addr);
+	pr_err("%s RegAddr: 0x%08x, RegData: 0x%04x (page 0x%x  addr 0x%x)\n",
+		__func__, ((MSDK_SENSOR_REG_INFO_STRUCT *)para)->RegAddr, ((MSDK_SENSOR_REG_INFO_STRUCT *)para)->RegData,
+		page, addr);
+
+	return 0;
+}
+
+static void get_imgsensor_id_from_dts(struct subdrv_ctx *ctx, u32 *sensor_id) {
+	struct subdrv_entry *m_subdrv_entry = &zhuquec2wide_mipi_raw_entry;
+	u32 final_sensor_id = 0xFFFFFFFF;
+	const char *of_sensor_names[OF_SENSOR_NAMES_MAXCNT];
+	const char *of_sensor_hal_names[OF_SENSOR_NAMES_MAXCNT];
+	u32   of_sensor_ids[OF_SENSOR_NAMES_MAXCNT] = {0};
+	int i, index, of_sensor_names_cnt, of_sensor_hal_names_cnt, of_sensor_ids_ret;
+	struct device *dev = &ctx->i2c_client->dev;
+
+	memset(&of_sensor_ids, 0xFF, sizeof(of_sensor_ids));
+
+	if(g_id_from_dts_flag == false) {
+		of_sensor_names_cnt = of_property_read_string_array(dev->of_node,
+			"sensor-names", of_sensor_names, ARRAY_SIZE(of_sensor_names));
+
+		of_sensor_hal_names_cnt = of_property_read_string_array(dev->of_node,
+			"sensor-hal-names", of_sensor_hal_names, ARRAY_SIZE(of_sensor_hal_names));
+
+		of_sensor_ids_ret = of_property_read_u32_array(dev->of_node,
+				"sensor-ids", of_sensor_ids, of_sensor_names_cnt);
+
+		pr_err("%s of_sensor_names_cnt(%d), of_sensor_ids_ret(%d)",
+			__func__, of_sensor_names_cnt, of_sensor_ids_ret);
+		for(i = 0 ;i < of_sensor_names_cnt; i++) {
+				pr_err("%s of_sensor_names[%d] = %s  of_sensor_ids[%d] = %d",
+				__func__, i, of_sensor_names[i], i, of_sensor_ids[i]);
+		}
+		for(i = 0 ;i < of_sensor_hal_names_cnt; i++) {
+			pr_err("%s of_sensor_hal_names_cnt[%d] = %s",
+				__func__, i, of_sensor_hal_names[i]);
+		}
+
+		if (of_sensor_names_cnt && (of_sensor_ids_ret == 0)) {
+			for(index = 0; index < of_sensor_names_cnt; index++) {
+				if (strncmp(SENSOR_NAME, of_sensor_names[index], strlen(SENSOR_NAME)) == 0) {
+					final_sensor_id = of_sensor_ids[index];
+					break;
+				}
+			}
+		} else {
+			pr_err("%s sensor-ids error in dts", __func__);
+		}
+		g_id_from_dts_flag = true;
+	}
+
+	if(final_sensor_id != 0xFFFFFFFF) {
+		*sensor_id = final_sensor_id;
+		ctx->s_ctx.sensor_id = final_sensor_id;
+
+		m_subdrv_entry->id = final_sensor_id;
+		if(of_sensor_hal_names_cnt == of_sensor_names_cnt) {
+			m_subdrv_entry->name = of_sensor_hal_names[index];
+		}
+
+		pr_err("%s final index(%d), id(%d) name(%s)",
+			__func__, index, m_subdrv_entry->id, m_subdrv_entry->name);
+	} else {
+		*sensor_id = ctx->s_ctx.sensor_id;
+	}
+
+	return;
+}
+
+static int zhuquec2wide_common_control(struct subdrv_ctx *ctx,
+			enum SENSOR_SCENARIO_ID_ENUM scenario_id,
+			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
+			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+{
+	int ret = ERROR_NONE;
+	u16 idx = 0;
+	u8 support = FALSE;
+	u8 *pbuf = NULL;
+	u16 size = 0;
+	u16 addr = 0;
+	u64 time_boot_begin = 0;
+	struct eeprom_info_struct *info = ctx->s_ctx.eeprom_info;
+	struct adaptor_ctx *_adaptor_ctx = NULL;
+	struct v4l2_subdev *sd = NULL;
+
+	if (ctx->i2c_client)
+		sd = i2c_get_clientdata(ctx->i2c_client);
+	if (sd)
+		_adaptor_ctx = to_ctx(sd);
+	if (!_adaptor_ctx) {
+		DRV_LOGE(ctx, "null _adaptor_ctx\n");
+		return -ENODEV;
+	}
+
+	if (scenario_id >= ctx->s_ctx.sensor_mode_num) {
+		DRV_LOG(ctx, "invalid sid:%u, mode_num:%u\n",
+			scenario_id, ctx->s_ctx.sensor_mode_num);
+		scenario_id = SENSOR_SCENARIO_ID_NORMAL_PREVIEW;
+		ret = ERROR_INVALID_SCENARIO_ID;
+	}
+	update_mode_info(ctx, scenario_id);
+
+	if (ctx->s_ctx.mode[scenario_id].mode_setting_table != NULL) {
+		DRV_LOG_MUST(ctx, "E: sid:%u size:%u\n", scenario_id,
+			ctx->s_ctx.mode[scenario_id].mode_setting_len);
+		if (ctx->power_on_profile_en)
+			time_boot_begin = ktime_get_boottime_ns();
+
+		/* initail setting */
+		subdrv_i2c_wr_regs_u8_u8(ctx, zhuquec2wide_soft_reset, ARRAY_SIZE(zhuquec2wide_soft_reset));
+		mdelay(3);
+
+		i2c_table_rewrite(ctx, ctx->s_ctx.mode[scenario_id].mode_setting_table,
+				ctx->s_ctx.mode[scenario_id].mode_setting_len);
+
+		if (ctx->power_on_profile_en) {
+			ctx->sensor_pw_on_profile.i2c_cfg_period =
+					ktime_get_boottime_ns() - time_boot_begin;
+
+			ctx->sensor_pw_on_profile.i2c_cfg_table_len =
+					ctx->s_ctx.mode[scenario_id].mode_setting_len;
+		}
+		DRV_LOG(ctx, "X: sid:%u size:%u\n", scenario_id,
+			ctx->s_ctx.mode[scenario_id].mode_setting_len);
+	} else {
+		DRV_LOGE(ctx, "please implement mode setting(sid:%u)!\n", scenario_id);
+	}
+
+	if (check_is_no_crop(ctx, scenario_id) && probe_eeprom(ctx)) {
+		idx = ctx->eeprom_index;
+		support = info[idx].xtalk_support;
+		pbuf = info[idx].preload_xtalk_table;
+		size = info[idx].xtalk_size;
+		addr = info[idx].sensor_reg_addr_xtalk;
+		if (support) {
+			if (pbuf != NULL && addr > 0 && size > 0) {
+				subdrv_i2c_wr_seq_p8(ctx, addr, pbuf, size);
+				DRV_LOG(ctx, "set XTALK calibration data done.");
+			}
+		}
+	}
+
+	zhuquec2wide_set_mirror_flip(ctx, ctx->s_ctx.mirror);
+
+	return ret;
+}
+
+static void zhuquec2wide_set_mirror_flip(struct subdrv_ctx *ctx, u8 image_mirror)
+{
+	u8 itemp = 0;
+
+	/* sw power up */
+	sw_power_control(ctx, 1);
+
+	check_current_scenario_id_bound(ctx);
+	subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x01);
+	itemp = subdrv_i2c_rd_u8_u8(ctx, 0x32) & ~0x03;
+	switch (image_mirror) {
+	case IMAGE_NORMAL:
+		itemp |= 0x00;
+		break;
+	case IMAGE_V_MIRROR:
+		itemp |= 0x02;
+		break;
+	case IMAGE_H_MIRROR:
+		itemp |= 0x01;
+		break;
+	case IMAGE_HV_MIRROR:
+		itemp |= 0x03;
+		break;
+	default:
+		DRV_LOGE(ctx, "there is something wrong. mirror:%u\n", image_mirror);
+		break;
+	}
+
+	subdrv_i2c_wr_u8_u8(ctx, 0x32, itemp);
+
+	/* sw power down */
+	sw_power_control(ctx, 0);
+
+	DRV_LOG(ctx, "mirror:%u\n", image_mirror);
+}
+
+static void sw_power_control(struct subdrv_ctx *ctx, u8 power_up) {
+	if (!ctx->is_streaming) {
+		if (power_up) {
+			subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x00);
+			subdrv_i2c_wr_u8_u8(ctx, 0x21, 0x0e);
+			subdrv_i2c_wr_u8_u8(ctx, 0x21, 0x00);
+        } else {
+			subdrv_i2c_wr_u8_u8(ctx, 0xfd, 0x00);
+			subdrv_i2c_wr_u8_u8(ctx, 0xc2, 0x32);
+			subdrv_i2c_wr_u8_u8(ctx, 0x21, 0x0f);
+		}
+	}
+}
+

@@ -1,0 +1,111 @@
+&pio {
+	uart1_pins_gpio_mode: uart1-gpio-mode {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO163__FUNC_GPIO163>,
+				<PINMUX_GPIO164__FUNC_GPIO164>;
+			bias-disable;
+		};
+	};
+	uart1_tx_pin_uart_mode: uart1-tx-pin-uart-mode {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO163__FUNC_UTXD1>;
+			bias-disable;
+		};
+	};
+	uart1_rx_pin_uart_mode: uart1-rx-pin-uart-mode {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO164__FUNC_URXD1>;
+                };
+	};
+
+	uart_rx_set: uart_rx_set {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO164__FUNC_URXD1>;
+			drive-strength = <MTK_DRIVE_2mA>;
+			bias-disable;
+		};
+	};
+
+        uart_rx_clear: uart_rx_clear {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO164__FUNC_GPIO164>;
+			drive-strength = <MTK_DRIVE_2mA>;
+			input-enable;
+			bias-disable;
+		};
+	};
+
+    uart_wake_gpio: uart_wake_gpio {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO8__FUNC_GPIO8>;
+			drive-strength = <MTK_DRIVE_2mA>;
+			bias-pull-up;
+			input-enable;
+		};
+    };
+
+    pogo_power_enable: pogo_power_enable {
+        pins-cmd-dat {
+			pinmux = <PINMUX_GPIO48__FUNC_GPIO48>;
+			output-high;
+		};
+    };
+
+    pogo_power_disable: pogo_power_disable {
+        pins-cmd-dat {
+			pinmux = <PINMUX_GPIO48__FUNC_GPIO48>;
+			output-low;
+		};
+    };
+};
+
+&uart1 {
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&uart1_tx_pin_uart_mode>;
+	pinctrl-1 = <&uart1_tx_pin_uart_mode>;
+	status = "okay";
+};
+
+&mt6368_vfp {
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+};
+
+&soc {
+    pogo_keyboard {
+        compatible = "tinno,pogo_keyboard";
+        status = "okay";
+
+        uart-tx-en-gpio = <&pio 117 0>;
+        uart-wake-gpio = <&pio 8 0>;
+
+        pinctrl-names = "default", "sleep", "uart_rx_set", "uart_rx_clear", "uart_wake_gpio", "pogo_power_enable", "pogo_power_disable";
+        pinctrl-0 = <&uart_rx_set>;
+        pinctrl-1 = <&uart_rx_set>;
+        pinctrl-2 = <&uart_rx_set>;
+        pinctrl-3 = <&uart_rx_clear>;
+        pinctrl-4 = <&uart_wake_gpio>;
+        pinctrl-5 = <&pogo_power_enable>;
+        pinctrl-6 = <&pogo_power_disable>;
+        pogopin-power-supply = <&mt6368_vfp>;
+        /*CRC_IBM_INIT_VAL*/
+        crc-ibm-init-val = <0xA5C9>;
+        /*PID*/
+        id-product = <0x3868>;
+        pogopin-kb-fw-support;
+        /*ota_start_addr, ota_get_version_addr, ota_send_data_start_addr*/
+        ota-customize-datas = <0x2000 0x2fd0 0x3000>;
+        ota-firmware-name = "POGOPIN_KB.bin";
+
+        tty-name-string = "ttyS1";
+        keyboard-name-strings =
+            "OPPO Pad 3 Smart Keyboard",
+            "OnePlus Pad Keyboard",
+            "OnePlus Pad 3R Smart Keyboard";
+
+	keyboard-ble-name-strings =
+            "OPPO Pad 3 Smart Keyboard",
+            "OnePlus Pad Keyboard",
+            "OnePlus Pad 3R Smart Keyboard";
+    };
+};

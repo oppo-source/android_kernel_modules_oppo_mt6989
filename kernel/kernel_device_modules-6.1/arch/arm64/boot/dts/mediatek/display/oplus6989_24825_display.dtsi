@@ -1,0 +1,82 @@
+&mtk_leds {
+	compatible = "mediatek,disp-leds";
+	status = "okay";
+
+	backlight {
+		label = "lcd-backlight";
+		led_mode = <4>;
+		min-brightness = <1>;
+		max-brightness = <4095>;
+		max-hw-brightness = <4095>;
+		led-bits = <13>;
+		trans-bits = <13>;
+		default-state = "on";
+	};
+};
+
+&dsi0 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	panel5@4 {
+		compatible = "aa600,p,7,a0025,vdo,panel";
+		reg = <0>;
+		reset-gpios = <&pio 230 0>;
+		1p2-gpios = <&pio 86 0>;
+		1p8-supply = <&mt6373_vrfio18_aif>;
+		3p0-supply = <&mt6373_vmc>;
+		oplus,dsi-serial-number-switch-page;
+		oplus,dsi-serial-number-switch-page-command= <0xF0 0x55 0xAA 0x52 0x08 0x01>;
+		oplus,dsi-serial-number-default-switch-page-command= <0xF0 0x55 0xAA 0x52 0x08 0x00>;
+		oplus,dsi-serial-number-enabled= <1>;
+		oplus,dsi-serial-number-index= <0>;
+		oplus,dsi-serial-number-reg= <0xD7>;
+		oplus,dsi-serial-number-read-count= <7>;
+		pinctrl-names = "default";
+		oplus,ofp-fp-type = <0xA10>;
+		oplus,ofp-longrui-aod-config = <0x4>;
+		oplus,ofp-fp-local-hbm-calibration;
+		port {
+			panel_in1: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
+
+	panel6@5 {
+		compatible = "aa600,p,3,a0025,vdo,panel";
+		reg = <1>;
+		reset-gpios = <&pio 230 0>;
+		1p2-gpios = <&pio 86 0>;
+		1p8-supply = <&mt6373_vrfio18_aif>;
+		3p0-supply = <&mt6373_vmc>;
+		oplus,dsi-serial-number-switch-page;
+		oplus,dsi-serial-number-switch-page-command= <0xF0 0x55 0xAA 0x52 0x08 0x00>;
+		oplus,dsi-serial-number-default-switch-page-command= <0xF0 0x55 0xAA 0x52 0x08 0x00>;
+		oplus,dsi-serial-number-enabled= <1>;
+		oplus,dsi-serial-number-index= <0>;
+		oplus,dsi-serial-number-reg= <0xA3>;
+		oplus,dsi-serial-number-read-count= <7>;
+		pinctrl-names = "default";
+		oplus,ofp-fp-type = <0xA10>;
+		oplus,ofp-longrui-aod-config = <0x4>;
+		oplus,ofp-fp-local-hbm-calibration;
+		port {
+			panel_in2: endpoint {
+				remote-endpoint = <&dsi_out2>;
+			};
+		};
+	};
+
+	ports {
+		port {
+			dsi_out: endpoint {
+				remote-endpoint = <&panel_in1>;
+			};
+
+			dsi_out2: endpoint2 {
+				remote-endpoint = <&panel_in2>;
+			};
+		};
+	};
+};

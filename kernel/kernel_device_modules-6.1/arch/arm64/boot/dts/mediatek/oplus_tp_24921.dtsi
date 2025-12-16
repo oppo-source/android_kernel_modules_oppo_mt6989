@@ -1,0 +1,112 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2020 MediaTek Inc.
+ */
+
+/* TOUCH start */
+
+&spi2 {
+	status = "okay";
+
+	nt36532@0 {
+ 		status = "okay";
+ 		compatible = "novatek,nf_nt36532";
+ 		reg = <0>;
+ 		chip-num = <1>;
+ 		chip-name = "NT36532";
+ 		project_id = <24921>;
+ 		firmware_name = "0X21N2NI9N19";
+ 		spi-max-frequency = <12000000>; //4800000,9600000,15000000,19200000
+ 		/* Interrupt && Irq-gpio */
+ 		reset-gpio = <&pio 60 0x00>;
+ 		interrupt-parent = <&pio>;
+ 		interrupts = <9  0x0>;
+ 		irq-gpio = <&pio 9 0x2002>;
+
+		pinctrl-names = "default", "pin_cs_high","pin_cs_low";
+		pinctrl-0 = <&ctp_oplus_pins_default>;
+		pinctrl-1 = <&ts_cs_active>;
+		pinctrl-2 = <&ts_cs_suspend &ctp_oplus_int_suspend>;
+ 		touchpanel,irq_need_dev_resume_time = <500>;
+
+ 		touchpanel,max-num-support = <10>;
+ 		touchpanel,tx-rx-num = <54 38>;
+ 		touchpanel,panel-coords = <20000 28000>;
+ 		touchpanel,display-coords = <2000 2800>;
+ 		touchpanel,touchmajor-limit = <0 54>;
+		touchpanel,single-optimized-time = <8>;
+ 		touchpanel,pen-tx-rx-num = <12 8>;
+ 		touchpanel,doze-tx-num = <12>;
+ 		touchpanel,pen-panel-coords = <20000 28000>;
+ 		touchpanel,pen-max-pressure = <16384>;
+ 		touchpanel,pen-max-tilt = <60 60>;
+ 		touchpanel,msecs-to-jiffies-time = <100>;
+		touchpanel,smooth-level = <255 32 64 96 128 254>;
+		touchpanel,sensitive-level = <255 40 30 15 9 3>;
+		touchpanel,sensitive-level-charging = <255 50 40 25 15 8>;
+ 		tp_type = <15>;//HUAXING
+ 		panel_type = <15>;
+
+ 		platform_support_project = <24921 24971 24922 24972>;
+ 		platform_support_project_dir = <24921 24921 24921 24921>;
+ 		platform_support_project_commandline = "oplus24921_nt36532w_2800_2000_dual_dsi_vdo_144hz_csot";
+ 		platform_support_project_external_name = "FA261";
+ 		vid_len = <7>;
+
+ 		incell_screen;
+ 		//iovcc_shutdown_support;
+ 		fw_edge_limit_support;
+ 		black_gesture_support;
+ 		charger_pump_support;
+ 		esd_handle_support;
+ 		black_gesture_test_support;
+ 		game_switch_support;
+ 		noflash_support;
+ 		lcd_trigger_load_tp_fw_support;
+ 		smart_gesture_support;
+ 		pressure_report_support;
+ 		pen_support;
+		waterproof_support;
+ 		irq_need_dev_resume_ok;
+ 		fw_update_app_support;
+ 		health_monitor_support;
+ 		fw_update_in_probe_with_headfile;
+ 		black_gesture_indep_support;
+ 		report_rate_limit;
+ 		touchpanel,button-type = <4>;
+ 	};
+};
+
+
+&pio {
+	ctp_oplus_pins_default: pins_default {
+			pins-cmd-dat {
+			pinmux = <PINMUX_GPIO11__FUNC_SPI2_CLK>,
+				<PINMUX_GPIO12__FUNC_SPI2_CSB>,
+				<PINMUX_GPIO14__FUNC_SPI2_MO>,
+				<PINMUX_GPIO13__FUNC_SPI2_MI>;
+			drive-strength = <4>;
+		};
+	};
+
+	ts_cs_active: ts_cs_active {
+		pins_cmd_dat {
+			pinmux = < PINMUX_GPIO12__FUNC_SPI2_CSB>;
+		};
+	};
+	ts_cs_suspend: ts_cs_suspend {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO12__FUNC_GPIO12>;
+			output-low;
+		};
+	};
+	ctp_oplus_int_suspend: int1_suspend {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO9__FUNC_GPIO9>;
+			input-enable;
+			bias-pull-down;
+		};
+	};
+};
+/* TOUCH end */
+

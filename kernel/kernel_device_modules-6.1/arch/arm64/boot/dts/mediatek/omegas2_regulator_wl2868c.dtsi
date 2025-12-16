@@ -1,0 +1,87 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2021 MediaTek Inc.
+ */
+
+&pio {
+//u7101
+	wl28681c1_default: state_default_a {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO1__FUNC_GPIO1>;
+		};
+	};
+	// GPIO90 pull up to enable dvdd supply
+	wl28681c1_reset_high: state_reset_high_a {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO1__FUNC_GPIO1>,
+			<PINMUX_GPIO18__FUNC_GPIO18>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	wl28681c1_reset_low: state_reset_low_a {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO1__FUNC_GPIO1>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+
+//u7101
+&i2c4 {
+	clock-frequency = <400000>;
+	wl28681c1@35 {
+		compatible = "wl28681c1-pmic";
+		reg = <0x35>;
+		pinctrl-names = "default", "reset_high", "reset_low";
+		pinctrl-0 = <&wl28681c1_default>;
+		pinctrl-1 = <&wl28681c1_reset_high>;
+		pinctrl-2 = <&wl28681c1_reset_low>;
+		regulators {
+			wl28681c1_ldo1a:ONLDO1 {
+				regulator-name = "wl28681c1_ldo1a";
+				regulator-min-microvolt = <800000>;
+				regulator-max-microvolt = <1504000>;
+			};
+			//dvdd 1.1
+			wl28681c1_ldo2a:ONLDO2 {
+				regulator-name = "wl28681c1_ldo2a";
+				regulator-min-microvolt = <800000>;
+				regulator-max-microvolt = <1504000>;
+			};
+			//front avdd 2.9
+			wl28681c1_ldo3a:ONLDO3 {
+				regulator-name = "wl28681c1_ldo3a";
+				regulator-min-microvolt = <1644000>;
+				regulator-max-microvolt = <3000000>;
+			};
+			//avdd 2.8
+			wl28681c1_ldo4a:ONLDO4 {
+				regulator-name = "wl28681c1_ldo4a";
+				regulator-min-microvolt = <1644000>;
+				regulator-max-microvolt = <2900000>;
+			};
+			//avdd 1.8
+			wl28681c1_ldo5a:ONLDO5 {
+				regulator-name = "wl28681c1_ldo5a";
+				regulator-min-microvolt = <1644000>;
+				regulator-max-microvolt = <2900000>;
+			};
+			//iovdd 1.8
+			wl28681c1_ldo6a:ONLDO6 {
+				regulator-name = "wl28681c1_ldo6a";
+				regulator-min-microvolt = <3204000>;
+				regulator-max-microvolt = <3204000>;
+			};
+			wl28681c1_ldo7a:ONLDO7 {
+				regulator-name = "wl28681c1_ldo7a";
+				regulator-min-microvolt = <1644000>;
+				regulator-max-microvolt = <3004000>;
+			};
+		};
+	};
+};
+
+
+

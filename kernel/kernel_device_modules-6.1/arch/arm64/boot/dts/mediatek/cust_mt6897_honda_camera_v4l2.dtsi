@@ -1,0 +1,470 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2020 MediaTek Inc. */
+#include <dt-bindings/clock/mt6897-clk.h>
+#include "mediatek/honda_regulator_aw37004.dtsi"
+#include "../../../../../../vendor/oplus/kernel/camera/imgsensor/inc/oplus_kd_imgsensor.h"
+
+&seninf_top {
+		seninf_csi_port_2: seninf-csi-port-2 {
+			compatible = "mediatek,seninf";
+			csi-port = "2";
+
+			port {
+				seninf_csi_port_2_in: endpoint {
+					remote-endpoint = <&sensor1_out>;
+				};
+			};
+		};
+
+		seninf_csi_port_3: seninf-csi-port-3 {
+			compatible = "mediatek,seninf";
+			csi-port = "3";
+
+			port {
+				seninf_csi_port_3_in: endpoint {
+					remote-endpoint = <&sensor0_out>;
+				};
+			};
+		};
+
+		seninf_csi_port_5: seninf-csi-port-5 {
+			compatible = "mediatek,seninf";
+			csi-port = "5";
+
+			port {
+				seninf_csi_port_5_in: endpoint {
+					remote-endpoint = <&sensor2_out>;
+				};
+			};
+		};
+};
+
+/* CAMERA GPIO standardization */
+&pio {
+	camera_pins_cam0_mclk_off: camera-pins-cam0-mclk-off {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO123__FUNC_GPIO123>;
+			drive-strength = <1>;
+		};
+	};
+	camera_pins_cam0_mclk_2ma: camera-pins-cam0-mclk-2ma {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO123__FUNC_CMMCLK0>;
+			drive-strength = <0>;
+		};
+	};
+	camera_pins_cam0_mclk_4ma: camera-pins-cam0-mclk-4ma {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO123__FUNC_CMMCLK0>;
+			drive-strength = <1>;
+		};
+	};
+	camera_pins_cam0_mclk_6ma: camera-pins-cam0-mclk-6ma {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO123__FUNC_CMMCLK0>;
+			drive-strength = <2>;
+		};
+	};
+	camera_pins_cam0_mclk_8ma: camera-pins-cam0-mclk-8ma {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO123__FUNC_CMMCLK0>;
+			drive-strength = <3>;
+		};
+	};
+	camera_pins_cam0_rst_0: cam0@0 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO115__FUNC_GPIO115>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam0_rst_1: cam0@1 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO115__FUNC_GPIO115>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	camera_pins_cam1_mclk_off: camera-pins-cam1-mclk-off {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO126__FUNC_GPIO126>;
+			drive-strength = <1>;
+		};
+	};
+	camera_pins_cam1_mclk_2ma: camera-pins-cam1-mclk-2ma {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO126__FUNC_CMMCLK3>;
+			drive-strength = <0>;
+		};
+	};
+	camera_pins_cam1_mclk_4ma: camera-pins-cam1-mclk-4ma {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO126__FUNC_CMMCLK3>;
+			drive-strength = <1>;
+		};
+	};
+	camera_pins_cam1_mclk_6ma: camera-pins-cam1-mclk-6ma {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO126__FUNC_CMMCLK3>;
+			drive-strength = <2>;
+		};
+	};
+	camera_pins_cam1_mclk_8ma: camera-pins-cam1-mclk-8ma {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO126__FUNC_CMMCLK3>;
+			drive-strength = <3>;
+		};
+	};
+	camera_pins_cam1_rst_0: cam1@0 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO118__FUNC_GPIO118>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam1_rst_1: cam1@1 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO118__FUNC_GPIO118>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	camera_pins_cam2_mclk_off: camera-pins-cam2-mclk-off {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO124__FUNC_GPIO124>;
+			drive-strength = <1>;
+		};
+	};
+	camera_pins_cam2_mclk_2ma: camera-pins-cam2-mclk-2ma {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO124__FUNC_CMMCLK1>;
+			drive-strength = <0>;
+		};
+	};
+	camera_pins_cam2_mclk_4ma: camera-pins-cam2-mclk-4ma {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO124__FUNC_CMMCLK1>;
+			drive-strength = <1>;
+		};
+	};
+	camera_pins_cam2_mclk_6ma: camera-pins-cam2-mclk-6ma {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO124__FUNC_CMMCLK1>;
+			drive-strength = <2>;
+		};
+	};
+	camera_pins_cam2_mclk_8ma: camera-pins-cam2-mclk-8ma {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO124__FUNC_CMMCLK1>;
+			drive-strength = <3>;
+		};
+	};
+	camera_pins_cam2_rst_0: cam2@0 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO116__FUNC_GPIO116>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam2_rst_1: cam2@1 {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO116__FUNC_GPIO116>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	camera_pins_default: camdefault {
+	};
+};
+/* CAMERA GPIO end */
+
+&odm {
+	camera_pins_cam0_afvdd: camera-pins-cam0-afvdd {
+		compatible = "regulator-fixed";
+		regulator-name = "camera-pins-cam0-afvdd";
+		regulator-min-microvolt = <2800000>;
+		regulator-max-microvolt = <2800000>;
+		enable-active-high;
+		gpio = <&pio 1 0x0>;
+	};
+};
+
+&mtk_composite_v4l2_2 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	port@0 {
+		reg = <0>;
+		main_af_endpoint: endpoint {
+			remote-endpoint = <&main_af>;
+		};
+	};
+	port@1 {
+		reg = <1>;
+		ois_power_endpoint: endpoint {
+			remote-endpoint = <&ois_power>;
+		};
+	};
+};
+
+&i2c2 {
+	status = "okay";
+	clock-frequency = <1000000>;
+
+	camera_af_main@0c {
+		compatible = "oplus,dw9800s_24891";
+		reg = <0x0c>;
+		vin-supply = <&camera_pins_cam0_afvdd>;
+		port {
+			main_af: endpoint {
+				remote-endpoint = <&main_af_endpoint>;
+			};
+		};
+	};
+
+	camera_ois_power@33 {
+		compatible = "oplus,ois_power";
+		reg = <0x33>;
+		ois1-supply = <&camera_pins_cam0_afvdd>;
+		port {
+			ois_power: endpoint {
+				remote-endpoint = <&ois_power_endpoint>;
+			};
+		};
+	};
+
+	sensor0: sensor0@1a {
+		compatible = "mediatek,imgsensor";
+		sensor-names = SENSOR_DRVNAME_HONDAMAIN_MIPI_RAW;
+		sensor-ids = <HONDAMAIN_SENSOR_ID>;
+		sensor-hal-names = SENSOR_DRVNAME_HONDAMAIN_MIPI_RAW;
+		reg = <0x1a>;
+
+		#thermal-sensor-cells = <0>;
+
+		pinctrl-names = "mclk_off",
+				"mclk_2mA",
+				"mclk_4mA",
+				"mclk_6mA",
+				"mclk_8mA",
+				"rst_low",
+				"rst_high";
+		pinctrl-0 = <&camera_pins_cam0_mclk_off>;
+		pinctrl-1 = <&camera_pins_cam0_mclk_2ma>;
+		pinctrl-2 = <&camera_pins_cam0_mclk_4ma>;
+		pinctrl-3 = <&camera_pins_cam0_mclk_6ma>;
+		pinctrl-4 = <&camera_pins_cam0_mclk_8ma>;
+		pinctrl-5 = <&camera_pins_cam0_rst_0>;
+		pinctrl-6 = <&camera_pins_cam0_rst_1>;
+
+		avdd-supply = <&aw37004_ldo3a>;
+		dvdd-supply = <&aw37004_ldo1a>;
+		dovdd-supply = <&mt6368_vfp>;
+		afvdd-supply = <&camera_pins_cam0_afvdd>;
+
+		clocks = <&topckgen_clk CLK_TOP_UNIVPLL_192M_D32>,
+			<&topckgen_clk CLK_TOP_UNIVPLL_192M_D16>,
+			<&topckgen_clk CLK_TOP_F26M_CK_D2>,
+			<&topckgen_clk CLK_TOP_UNIVPLL_192M_D10>,
+			<&topckgen_clk CLK_TOP_UNIVPLL_192M_D8>,
+			<&topckgen_clk CLK_TOP_UNIVPLL_D6_D16>,
+			<&topckgen_clk CLK_TOP_UNIVPLL_D6_D8>,
+			<&vlp_cksys_clk CLK_VLP_CK_CAMTG_SEL>;  //mclk0
+		clock-names = "6", "12", "13", "19.2", "24", "26", "52", "mclk";
+
+		status = "okay";
+		port {
+			sensor0_out: endpoint {
+				remote-endpoint = <&seninf_csi_port_3_in>;
+			};
+		};
+	};
+
+	mtk_camera_eeprom0:camera-eeprom0@50 {
+		compatible = "mediatek,camera_eeprom";
+		reg = <0x50>;
+		status = "okay";
+	};
+};
+
+&i2c9 {
+	status = "okay";
+	clock-frequency = <1000000>;
+
+	sensor1: sensor1@10 {
+		compatible = "mediatek,imgsensor";
+		sensor-names = SENSOR_DRVNAME_HONDAFRONT_MIPI_RAW;
+		sensor-ids = <HONDAFRONT_SENSOR_ID>;
+		sensor-hal-names = SENSOR_DRVNAME_HONDAFRONT_MIPI_RAW;
+		reg = <0x10>;
+		#reindex-to = <0>;
+		#cust-aov-csi-clk = <312>;
+		#thermal-sensor-cells = <0>;
+
+		pinctrl-names = "mclk_off",
+				"mclk_2mA",
+				"mclk_4mA",
+				"mclk_6mA",
+				"mclk_8mA",
+				"rst_low",
+				"rst_high";
+
+		pinctrl-0 = <&camera_pins_cam1_mclk_off>;
+		pinctrl-1 = <&camera_pins_cam1_mclk_2ma>;
+		pinctrl-2 = <&camera_pins_cam1_mclk_4ma>;
+		pinctrl-3 = <&camera_pins_cam1_mclk_6ma>;
+		pinctrl-4 = <&camera_pins_cam1_mclk_8ma>;
+		pinctrl-5 = <&camera_pins_cam1_rst_0>;
+		pinctrl-6 = <&camera_pins_cam1_rst_1>;
+
+		avdd-supply = <&aw37004_ldo4a>;
+		dvdd-supply = <&aw37004_ldo2a>;
+		dovdd-supply = <&mt6368_vfp>;
+
+		clocks = <&topckgen_clk CLK_TOP_UNIVPLL_192M_D32>,
+			<&topckgen_clk CLK_TOP_UNIVPLL_192M_D16>,
+			<&topckgen_clk CLK_TOP_F26M_CK_D2>,
+			<&topckgen_clk CLK_TOP_UNIVPLL_192M_D10>,
+			<&topckgen_clk CLK_TOP_UNIVPLL_192M_D8>,
+			<&topckgen_clk CLK_TOP_UNIVPLL_D6_D16>,
+			<&topckgen_clk CLK_TOP_UNIVPLL_D6_D8>,
+			<&topckgen_clk CLK_TOP_CAMTG4_SEL>;   //mclk3
+		clock-names = "6", "12", "13", "19.2", "24", "26", "52", "mclk";
+
+		status = "okay";
+		port {
+			sensor1_out: endpoint {
+				remote-endpoint = <&seninf_csi_port_2_in>;
+			};
+		};
+	};
+
+    mtk_camera_eeprom1:camera-eeprom1@54 {
+		compatible = "mediatek,camera_eeprom";
+		reg = <0x54>;
+		status = "okay";
+	};
+};
+
+&i2c4 {
+	status = "okay";
+	clock-frequency = <400000>;
+
+   sensor2: sensor2@36 {
+		compatible = "mediatek,imgsensor";
+		sensor-names = SENSOR_DRVNAME_HONDAWIDE_MIPI_RAW;
+		sensor-ids = <HONDAWIDE_SENSOR_ID>;
+		sensor-hal-names = SENSOR_DRVNAME_HONDAWIDE_MIPI_RAW;
+		reg = <0x36>;
+		#reindex-to = <0>;
+		#cust-aov-csi-clk = <312>;
+		#thermal-sensor-cells = <0>;
+
+		pinctrl-names = "mclk_off",
+				"mclk_2mA",
+				"mclk_4mA",
+				"mclk_6mA",
+				"mclk_8mA",
+				"rst_low",
+				"rst_high";
+
+		pinctrl-0 = <&camera_pins_cam2_mclk_off>;
+		pinctrl-1 = <&camera_pins_cam2_mclk_2ma>;
+		pinctrl-2 = <&camera_pins_cam2_mclk_4ma>;
+		pinctrl-3 = <&camera_pins_cam2_mclk_6ma>;
+		pinctrl-4 = <&camera_pins_cam2_mclk_8ma>;
+		pinctrl-5 = <&camera_pins_cam2_rst_0>;
+		pinctrl-6 = <&camera_pins_cam2_rst_1>;
+
+		avdd-supply = <&aw37004_ldo4a>;
+		dvdd-supply = <&mt6368_vrf13_aif>;
+		dovdd-supply = <&mt6368_vfp>;
+
+		clocks = <&topckgen_clk CLK_TOP_UNIVPLL_192M_D32>,
+			<&topckgen_clk CLK_TOP_UNIVPLL_192M_D16>,
+			<&topckgen_clk CLK_TOP_F26M_CK_D2>,
+			<&topckgen_clk CLK_TOP_UNIVPLL_192M_D10>,
+			<&topckgen_clk CLK_TOP_UNIVPLL_192M_D8>,
+			<&topckgen_clk CLK_TOP_UNIVPLL_D6_D16>,
+			<&topckgen_clk CLK_TOP_UNIVPLL_D6_D8>,
+			<&topckgen_clk CLK_TOP_CAMTG2_SEL>;  //mclk1
+		clock-names = "6", "12", "13", "19.2", "24", "26", "52", "mclk";
+
+		status = "okay";
+		port {
+			sensor2_out: endpoint {
+				remote-endpoint = <&seninf_csi_port_5_in>;
+			};
+		};
+	};
+
+	mtk_camera_eeprom2:camera-eeprom2@51 {
+		compatible = "mediatek,camera_eeprom";
+		reg = <0x51>;
+		status = "okay";
+	};
+};
+
+&i2c6 {
+	clock-frequency = <400000>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	sy7806e:sy7806e@63 {
+		compatible = "oplus,sy7806e_honda";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0x63>;
+		#cooling-cells = <2>;
+		pinctrl-names = "default", "hwen-high", "hwen-low";
+		pinctrl-0 = <&sy7806e_pins_default>;
+		pinctrl-1 = <&sy7806e_pins_hwen_high>;
+		pinctrl-2 = <&sy7806e_pins_hwen_low>;
+		status = "okay";
+		flash@0{
+			reg = <0>;
+			type = <0>;
+			ct = <0>;
+			part = <0>;
+			port {
+				fl_core_0: endpoint {
+					remote-endpoint = <&flashlight_0>;
+				};
+			};
+		};
+	};
+};
+
+&pio {
+	sy7806e_pins_default: default {
+	};
+
+	sy7806e_pins_hwen_high: hwen-high {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO62__FUNC_GPIO62>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	sy7806e_pins_hwen_low: hwen-low {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO62__FUNC_GPIO62>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+
+&mtk_composite_v4l2_1 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	port@0 {
+		reg = <0>;
+		flashlight_0: endpoint {
+			remote-endpoint = <&fl_core_0>;
+		};
+	};
+};

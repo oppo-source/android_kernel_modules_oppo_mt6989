@@ -1,0 +1,90 @@
+&i2c3 {
+ 	status = "okay";
+	clock-frequency = <400000>;
+	aw21024_led@30 {
+		compatible = "awinic,aw21024_led";
+		reg = <0x30>;
+
+		/* Power Config */
+		reset-gpio = <&pio 39 0x1>; 
+		vbled-enable-gpio = <&pio 18 0x1>;
+
+		/*apse_mode;*/
+		/* 0:16M 1:8M 2:1M 3:512K 4:256K 5:125K 6:62K 7:31K */
+		clk_pwm = <1>;
+		/* 255 1023 2047 */
+		max_brightness = <255>;
+		led_current = <48>;
+		brightness = <125>;
+
+		/*aw210xx_led_id = <0>;*/ /*oppo添加，后续确定*/
+		led_groups_num = <8>;
+		/* led_allocation_order = <1 3 5 7 2 4 6 8>; */
+		led_allocation_order = <5 2 6 3 7 0 4 1>;
+		/* this means place 1st rgb into index 1, 2nd into index 5 and so on*/
+		/* 灯效替代global_current节点*/
+		global_current_max = <0x30>;
+		global_current_min = <0x0b>;
+
+
+		//osc_clk = <1>;
+		//br_res = <1>;
+
+		/*chipid = <0x22>; 用于区分21012 21018等*/
+		status = "okay";
+		pinctrl-names = "default";
+		pinctrl-0 = <&aw2124_enable_pin_default>;
+		aw21024,red {
+			aw21024,name = "red";
+			aw21024,id = <0>;
+			aw21024,imax = <1>;
+			aw21024,led_default_trigger = "none";
+			aw21024,brightness = <0>;
+			aw21024,max-brightness = <255>;
+			aw21024,rise-time-ms = <5>;
+			aw21024,hold-time-ms = <0>;
+			aw21024,fall-time-ms = <0>;
+			aw21024,off-time-ms = <0>;
+			//aw21024,color_ratio = <2 3>;
+		};
+		aw21024,green {
+			aw21024,name = "green";
+			aw21024,id = <1>;
+			aw21024,imax = <1>;
+			aw21024,led_default_trigger = "none";
+			aw21024,brightness = <0>;
+			aw21024,max-brightness = <255>;
+			aw21024,rise-time-ms = <5>;
+			aw21024,hold-time-ms = <0>;
+			aw21024,fall-time-ms = <0>;
+			aw21024,off-time-ms = <0>;
+			//aw21024,color_ratio = <2 3>;
+		};
+		aw21024,blue {
+			aw21024,name = "blue";
+			aw21024,id = <2>;
+			aw21024,imax = <1>;
+			aw21024,led_default_trigger = "none";
+			aw21024,brightness = <0>;
+			aw21024,max-brightness = <255>;
+			aw21024,rise-time-ms = <5>;
+			aw21024,hold-time-ms = <0>;
+			aw21024,fall-time-ms = <0>;
+			aw21024,off-time-ms = <0>;
+			//aw21024,color_ratio = <1 3>;
+		};
+	};
+ };
+
+&pio{
+
+		aw2124_enable_pin_default: enable_pin_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO18__FUNC_GPIO18>,
+					<PINMUX_GPIO39__FUNC_GPIO39>;
+			slew-rate = <0>;
+			bias-disable;
+			input-enable;
+		};
+		};
+};

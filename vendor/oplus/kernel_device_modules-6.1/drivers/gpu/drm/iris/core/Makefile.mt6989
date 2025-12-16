@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: GPL-2.0-only WITH Linux-syscall-note
+
+$(warning The core module of pixelworks iris will be added to the kernel)
+
+PWAROOT=../iris/core
+
+ccflags-y += -DCONFIG_PXLW_IRIS
+
+ccflags-y += -I$(PWAROOT)/common/  \
+			 -I$(PWAROOT)/iris7p/
+
+mediatek-drm-y += $(PWAROOT)/common/pw_iris_common.o \
+		  $(PWAROOT)/common/pw_iris_dual.o \
+		  $(PWAROOT)/common/pw_iris_lp.o \
+		  $(PWAROOT)/common/pw_iris_lut.o \
+		  $(PWAROOT)/common/pw_iris_timing_switch.o \
+		  $(PWAROOT)/common/pw_iris_memc_helper.o \
+		  $(PWAROOT)/common/pw_iris_dbg.o \
+		  $(PWAROOT)/common/pw_iris_lightup.o \
+		  $(PWAROOT)/common/pw_iris_lightup_ocp.o \
+		  $(PWAROOT)/common/pw_iris_i2c.o \
+		  $(PWAROOT)/common/pw_iris_i3c.o \
+		  $(PWAROOT)/common/pw_iris_gpio.o \
+		  $(PWAROOT)/common/pw_iris_loop_back.o \
+		  $(PWAROOT)/common/pw_iris_ioctl.o \
+		  $(PWAROOT)/common/pw_iris_dts_fw.o \
+		  $(PWAROOT)/common/pw_iris_memc.o \
+		  $(PWAROOT)/common/pw_iris_pq.o \
+		  $(PWAROOT)/common/pw_iris_cmpt_fpga.o
+
+mediatek-drm-y += $(PWAROOT)/iris7p/pw_iris_lut.o \
+		  $(PWAROOT)/iris7p/pw_iris_lp.o \
+		  $(PWAROOT)/iris7p/pw_iris_timing_switch.o  \
+		  $(PWAROOT)/iris7p/pw_iris_loop_back.o  \
+		  $(PWAROOT)/iris7p/pw_iris_memc.o  \
+		  $(PWAROOT)/iris7p/pw_iris_dbg.o \
+		  $(PWAROOT)/iris7p/pw_iris_pq.o \
+		  $(PWAROOT)/iris7p/pw_iris_ioctl.o \
+		  $(PWAROOT)/iris7p/pw_iris_lightup.o \
+		  $(PWAROOT)/iris7p/pw_iris_ops_i7p.o
+

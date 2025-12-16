@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: GPL-2.0-only WITH Linux-syscall-note
+
+PWAROOT=.
+IRISM_KROOT_I7P=$(PWAROOT)/iris/core/iris7p
+
+msm_drm-$(CONFIG_DRM_MSM_DSI) += $(IRISM_KROOT_I7P)/pw_iris_lut.o \
+				$(IRISM_KROOT_I7P)/pw_iris_lp.o \
+				$(IRISM_KROOT_I7P)/pw_iris_timing_switch.o  \
+				$(IRISM_KROOT_I7P)/pw_iris_loop_back.o  \
+				$(IRISM_KROOT_I7P)/pw_iris_memc.o  \
+				$(IRISM_KROOT_I7P)/pw_iris_dbg.o \
+				$(IRISM_KROOT_I7P)/pw_iris_pq.o \
+				$(IRISM_KROOT_I7P)/pw_iris_ioctl.o \
+				$(IRISM_KROOT_I7P)/pw_iris_lightup.o

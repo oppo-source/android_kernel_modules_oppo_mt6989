@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+* Copyright (C) 2021-2020 Oplus. All rights reserved.
+*/
+#include <dt-bindings/iio/mt635x-auxadc.h>
+#include <dt-bindings/pinctrl/mt6373-pinfunc.h>
+#include <dt-bindings/pinctrl/mt65xx.h>
+
+
+/* charge start */
+&regulator_vibrator{
+	min-volt = <3000000>;
+	max-volt = <3000000>;
+};
+
+&ssusb {
+	maximum-speed = "high-speed";
+};
+
+&u2port0 {
+	mediatek,eye-vrt = <6>;
+	mediatek,eye-term = <6>;
+	mediatek,rev6 = <2>;
+	mediatek,eye-vrt-host = <4>;
+	mediatek,eye-term-host = <4>;
+	mediatek,rev6-host = <3>;
+	mediatek,discth = <0xa>;
+};
+
+&lk_charger {
+	/*0:pmic_vib 1:gpio_vib 2:si_vib 3:aw_vib*/
+	vibr_scheme = <0>;
+	/*0:MT6366 1:MT6368 2:MT6369 3:MT6373 4:MT6377*/
+	vibr_ldo_pmic_id = <1>;
+	vibr_spmi_mstid = <1>;
+	vibr_spmi_slaveid = <5>;
+};
+
+&ps5170 {
+	status = "disabled";
+};

@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: GPL-2.0-only WITH Linux-syscall-note
+
+PWAROOT=.
+IRISM_KROOT=$(PWAROOT)/iris/core/common
+
+msm_drm-$(CONFIG_DRM_MSM_DSI) += $(IRISM_KROOT)/pw_iris_common.o \
+	$(IRISM_KROOT)/pw_iris_lp.o \
+	$(IRISM_KROOT)/pw_iris_dual.o \
+	$(IRISM_KROOT)/pw_iris_timing_switch.o \
+	$(IRISM_KROOT)/pw_iris_lut.o \
+	$(IRISM_KROOT)/pw_iris_dbg.o \
+	$(IRISM_KROOT)/pw_iris_lightup.o \
+	$(IRISM_KROOT)/pw_iris_lightup_ocp.o \
+	$(IRISM_KROOT)/pw_iris_i2c.o \
+	$(IRISM_KROOT)/pw_iris_i3c.o \
+	$(IRISM_KROOT)/pw_iris_gpio.o \
+	$(IRISM_KROOT)/pw_iris_loop_back.o \
+	$(IRISM_KROOT)/pw_iris_ioctl.o \
+	$(IRISM_KROOT)/pw_iris_dts_fw.o \
+	$(IRISM_KROOT)/pw_iris_memc.o \
+	$(IRISM_KROOT)/pw_iris_pq.o \
+	$(IRISM_KROOT)/pw_iris_cmpt_fpga.o \
+	$(IRISM_KROOT)/pw_iris_memc_helper.o
+
+pw_iris-y += $(IRISM_KROOT)/pw_iris_drv.o
+
+ccflags-y += -DCONFIG_PXLW_IRIS
+ccflags-y += -DPXLW_IRIS_DUAL

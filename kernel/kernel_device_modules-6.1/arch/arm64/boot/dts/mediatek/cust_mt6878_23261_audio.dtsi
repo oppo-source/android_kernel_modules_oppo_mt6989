@@ -1,0 +1,115 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2020 MediaTek Inc. */
+
+&i2c9 {
+	clock-frequency = <400000>;
+
+	was4783: was4783@42 {
+		compatible = "oplus,typec-switch-i2c";
+		reg = <0x42>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&typec_switch_hs_det>;
+		oplus,hs-det-gpio = <&pio 29 0>;
+		oplus,hs-det-level = <1>;
+		// add for supporting type-c headphone detect bypass
+		oplus,hp-bypass = <1>;
+		status = "okay";
+	};
+
+	sipa_i2c_L: sipa_i2c@6c{
+		compatible = "si,sia91xx-i2c";
+		#sound-dai-cells = <0>;
+		reg = <0x6c>;
+		si,sipa-dev = <&si_pa_L>;
+		status = "okay";
+	};
+
+	sipa_i2c_R: sipa_i2c@6d{
+		compatible = "si,sia91xx-i2c";
+		#sound-dai-cells = <0>;
+		reg = <0x6d>;
+		si,sipa-dev = <&si_pa_R>;
+		status = "okay";
+	};
+
+};
+
+&audio_extend {
+ 	//for nxp speaker
+ 	oplus,speaker-vendor = "sipa";
+ 	oplus,speaker-i2s-id = <9>;
+ 	oplus,speaker-i2s-id-in = <8>;
+	oplus,speaker-codec-name = "sipa_i2c.9-006c","sipa_i2c.9-006d";
+	oplus,speaker-codec-dai-name = "sia91xx-aif-9-6c","sia91xx-aif-9-6d";
+	oplus,spk-i2s-index = <25 24>;
+};
+
+&pio {
+	typec_switch_hs_det: typec_switch_hs_det {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO29__FUNC_GPIO29>;
+			slew-rate = <1>;  /*direction 0:in, 1:out*/
+			output-low;
+		};
+	};
+
+	sia91xx_gpio_L: sia91xx_gpio_L {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO149__FUNC_GPIO149>;
+			slew-rate = <1>;
+			bias-disable;
+		};
+	};
+
+	sia91xx_gpio_R: sia91xx_gpio_R {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
+			slew-rate = <1>;
+			bias-disable;
+		};
+	};
+
+};
+
+&si_pa_L {
+	compatible = "si,sia91xx";
+	si,si_pa_type = "sia917x";
+	si,si_pa_reset = <&pio 149 0>;
+	pinctrl-names = "si_pa_gpio";
+	pinctrl-0 = <&sia91xx_gpio_L>;
+	si,si_pa_disable_pin = <0>;
+	sipa_min_range = <5000>;
+	sipa_max_range = <8000>;
+
+	channel_num = <0>;
+};
+
+&si_pa_R {
+	compatible = "si,sia91xx";
+	si,si_pa_type = "sia917x";
+	si,si_pa_reset = <&pio 152 0>;
+	pinctrl-names = "si_pa_gpio";
+	pinctrl-0 = <&sia91xx_gpio_R>;
+	si,si_pa_disable_pin = <0>;
+	sipa_min_range = <5000>;
+	sipa_max_range = <8000>;
+
+	channel_num = <1>;
+};
+
+&sound {
+	si,sia81xx-max-num = <2>;
+	si,sia81xx-aux-devs = <&sipa_i2c_L>, <&sipa_i2c_R>;
+	si,sia81xx-aux-devs-prefix = "SpkrLeft", "SpkrRight";
+
+	mtk_spk_i2s_out = <3>;
+	mtk_spk_i2s_in = <9>;
+	mediatek,speaker-codec {
+		sound-dai = <&sipa_i2c_L>, <&sipa_i2c_R>;
+	};
+};
+
+// add for supporting type-c headphone detect bypass
+&accdet {
+	headset-eint0-disable = <1>;
+};

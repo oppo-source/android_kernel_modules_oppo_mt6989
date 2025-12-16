@@ -1,0 +1,37 @@
+&bt {
+	flavor-bin = "2g2a";
+};
+
+&connfem {
+	sku {
+		hw-names = "qm42655_qm45655"; /* hw-0 */
+		hw-0 {
+			using-fems =    <&qm42655>,
+							<&qm45655>;
+			layout-flag = <0x00000000>;
+			layout =        <&g_wf0_bt0_qm42655>,
+							<&g_wf1_bt1_qm42655>,
+							<&a_wf0_qm45655>,
+							<&a_wf1_qm45655>;
+			common {
+				flags {
+					fe-ant-cnt           = [85];
+					fe-conn-dpdt-sp3t    = [80];
+					fe-conn-spdt         = [80];
+					fe-bt-wf-usage       = [80];
+					fe-conn-spdt-2       = [80];
+				};
+			};
+			wifi {
+				using-states = <&qm42655_rxl>,
+							<&qm45655_rxl>;
+			};
+			bt {
+				flags {
+					efem-mode	= [03]; /* 3:epa_elna */
+					rx-mode		= [24];
+				};
+			};
+		};
+	};
+};

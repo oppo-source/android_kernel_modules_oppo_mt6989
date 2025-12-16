@@ -1,0 +1,1480 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+* Copyright (C) 2021-2020 Oplus. All rights reserved.
+*/
+#include <dt-bindings/iio/mt635x-auxadc.h>
+#include <dt-bindings/iio/adc/mediatek,mt6375_auxadc.h>
+#include <dt-bindings/pinctrl/mt6373-pinfunc.h>
+#include <dt-bindings/pinctrl/mt65xx.h>
+#include "oplus_chg.h"
+
+/*
+ *
+ * CPU:MT6897 bcompare with MT6878 CASIO
+ *
+ * UTXD0 -->GPIO207
+ * URXD0 -->GPIO208
+ *
+ * I2C
+ * MASTER_CHG --> I2C5 MT6375
+ * CP_MASTER  --> I2C12 SC8547D
+ * CP_SLAVE   --> I2C13 SC8547d
+ *
+ * IRQB
+ * EINT_CHG_1 (cp1 irq)               -->GPIO40
+ * EINT_CHG_2 (cp2 irq)               -->GPIO61
+ *
+ * GPIO
+ * VBUS_SHORT(防烧口)                 --> MT6369 MOS_CON1 H8
+ * //USB_SWITCH_1(usb/uart&vooc switch) --> GPIO44
+ * //USB_SWITCH_2(uart/vooc switch)     --> GPIO153
+ * //用音频开关
+ * SEC_IC (加密电池GPIO for 80W)      --> GPIO23
+ *
+ *
+ *
+ * milkyway c2 ADC:
+ * MT6368 AUXADC_VIN1 				--> VBAT_TEMP_ADC (电池仓温度检测NTC)(小板ntc温度)
+ * //MT6368 AUXADC_VIN2               		--> FLASH_THERM (闪光灯温度检测 NTC)
+ *
+ * MT6375 BATON					--> BATON_TH (电池保护板温度)(mt6897.dts里配了MT6375_AUXADC_BATON)
+ * MT6363 AUXADC_VIN1				--> USBCON_TEM_ADC_MCU (usb btb)
+ * //MT6363 AUXADC_VIN2				--> Board_THERM 板温
+ * MT6363 AUXADC_VIN3				--> USB_TEMP_ADC1 防烧口NTC1
+ * MT6363 AUXADC_VIN4				--> USB_TEMP_ADC1 防烧口NTC2
+ * MT6363 AUXADC_VIN5				--> CP_MOS_THERM 充电温度检测ntc
+ * MT6363 AUXADC_VIN6				--> BATCON_TEM_ADC_MCU (battery btb)
+ *
+ */
+
+&mtk_gauge {
+	status = "okay";
+	charger = <&mt6375_chg>;
+	FUELGAGUE_APPLY = <(1)>;
+	IS_SUBBOARD_TEMP_SUPPORT = <(0)>;
+	EXTERNAL_AUTHENTICATE =<(1)>;
+	Enable_Is_Force_Full = <(1)>;
+	active-table = <(5)>;
+	r-fg-value = <(1)>;/* R_sense resistance. 1 milliohm */
+	com-r-fg-value = <(0)>;/* R_sense compensate resistance. not use COM_R_FG_VALUE */
+	UNIT_MULTIPLE = <(1)>;
+	RBAT_PULL_DOWN_R = <(24000)>;
+	RBAT_PULL_UP_R = <(12000)>;
+	RBAT_PULL_UP_VOLT = <(1840)>;
+	USE_MORE_PRECISE_NTC_TABLE = <(1)>;
+	car-tune-value = <(99)>;
+	DIM2_TABLE_DISTINGUISH = <(1)>;
+	keep-100-percent-minsoc = <(9500)>;
+	aging-factor-diff = <(1)>;
+	keep-100-percent = <(2)>;
+
+
+	io-channels = <&mt6375_auxadc MT6375_AUXADC_BATSNS>,
+				  <&mt6375_auxadc MT6375_AUXADC_BATON>,
+				  <&mt6375_auxadc MT6375_AUXADC_IMP>,
+				  <&mt6375_auxadc MT6375_AUXADC_IMIX_R>,
+				  <&mt6375_auxadc MT6375_AUXADC_VREF>;
+	io-channel-names = "bat_volt", "bat_temp", "ptim_bat_volt",
+					   "ptim_r", "vref";
+
+	#include "bat_setting/mt6897_battery_prop_dim2_ext_24891.dtsi"
+	#include "bat_setting/mt6897_battery_table_24891.dtsi"
+};
+
+&mt6375_chg {
+	chg-tmr = <15>;
+	ircmp_v = <0>;
+};
+
+&soc {
+	mt6375_gauge: mt6375_chg {
+		status = "okay";
+		compatible = "oplus,hal_mt6375_gauge";
+
+		oplus,ic_type = <OPLUS_CHG_IC_GAUGE>;
+		oplus,ic_index = <0>;
+		oplus,batt_num = <1>;
+		oplus,mtk_gauge_power_sel_support;
+		oplus,mtk_gauge_cali_track_support;
+		oplus,mtk_gauge_power_sel_by_power_support;
+		/* honda graphite sub btb valid temperature range, which is provided by hardware engineer. */
+		oplus,sub_btb_valid_temp = <(-350) 1000>;
+	};
+};
+
+&extcon_usb {
+	vbus-current = <1300000>;
+};
+
+&uart0 {
+	pinctrl-names = "uart0_rx_gpio", "uart0_tx_gpio";
+	pinctrl-0 = <&uart0_rx_gpio_input>;
+	pinctrl-1 = <&uart0_tx_gpio_input>;
+	status = "okay";
+	txpin = <207>;
+	rxpin = <208>;
+};
+
+&pmic_adc {
+	vin2_100k {
+		channel = <AUXADC_VIN2>;
+		pures = <ADC_PURES_100K>;
+	};
+	vin3_100k {
+		channel = <AUXADC_VIN3>;
+		pures = <ADC_PURES_100K>;
+	};
+	vin4_100k {
+		channel = <AUXADC_VIN4>;
+		pures = <ADC_PURES_100K>;
+	};
+	vin5_100k {
+		channel = <AUXADC_VIN5>;
+		pures = <ADC_PURES_100K>;
+	};
+	vin6_100k {
+		channel = <AUXADC_VIN6>;
+		pures = <ADC_PURES_100K>;
+	};
+};
+
+&mt6368_adc {
+	vin1_100k {
+		channel = <AUXADC_VIN1>;
+		pures = <ADC_PURES_100K>;
+	};
+};
+
+&pio {
+	uart0_rx_gpio_input: uart0_rx_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO208__FUNC_GPIO208>; /* URXD0 */
+			input-enable;
+			bias-disable;
+		};
+	};
+
+	uart0_tx_gpio_input: uart0_tx_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO207__FUNC_GPIO207>; /* UTXD0 */
+			input-enable;
+			bias-disable;
+		};
+	};
+
+	charging_inter_active: charging_inter_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO40__FUNC_GPIO40>;
+			input-enable;
+			bias-pull-up;
+		};
+	};
+
+	charging_inter_sleep: charging_inter_sleep {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO40__FUNC_GPIO40>;
+			input-enable;
+			bias-pull-up;
+		};
+	};
+
+	i2c12_i2c_state: i2c12_i2c_state {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO162__FUNC_SDA12>,
+				 <PINMUX_GPIO161__FUNC_SCL12>;
+			bias-disable;
+		};
+	};
+
+	i2c12_output_low_state: i2c12_output_low_state {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO162__FUNC_GPIO162>,
+				 <PINMUX_GPIO161__FUNC_GPIO161>;
+			output-low;
+		};
+	};
+
+	maxim_active: maxim_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO23__FUNC_GPIO23>;
+			drive-strength = <6>;
+			bias-pull-up;
+		};
+	};
+
+	switch_ctrl_ap: switch_ctrl_ap {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO128__FUNC_GPIO128>;
+			output-low;
+		};
+	};
+
+	switch_ctrl_vooc: switch_ctrl_vooc {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO128__FUNC_GPIO128>;
+			output-high;
+		};
+	};
+
+	switch_ctrl_ufcs: switch_ctrl_ufcs {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO128__FUNC_GPIO128>;
+			output-high;
+		};
+	};
+
+	charger_pins_default: eint0default {
+	};
+};
+
+&soc {
+	oplus_chg_core {
+		oplus,chg_framework_v2;
+		oplus,smart_charging_screenoff;
+		oplus,chg_spec_version = <OPLUS_CHG_SPEC_VER_V3P7>;
+		oplus,common-charge-icl-support;
+		oplus,eco_region_list = /bits/ 8 <0x44>;
+
+		oplus-charger {
+			mtk_6895_groups: oplus,mtk_6895-groups {
+				functions = <
+					OPLUS_IC_FUNC_INIT
+					OPLUS_IC_FUNC_EXIT
+					OPLUS_IC_FUNC_REG_DUMP
+					OPLUS_IC_FUNC_SMT_TEST
+					OPLUS_IC_FUNC_BUCK_INPUT_PRESENT
+					OPLUS_IC_FUNC_BUCK_INPUT_SUSPEND
+					OPLUS_IC_FUNC_BUCK_INPUT_IS_SUSPEND
+					OPLUS_IC_FUNC_BUCK_OUTPUT_SUSPEND
+					OPLUS_IC_FUNC_BUCK_OUTPUT_IS_SUSPEND
+					OPLUS_IC_FUNC_BUCK_SET_ICL
+					OPLUS_IC_FUNC_BUCK_GET_ICL
+					OPLUS_IC_FUNC_BUCK_SET_FCC
+					OPLUS_IC_FUNC_BUCK_SET_FV
+					OPLUS_IC_FUNC_BUCK_SET_ITERM
+					OPLUS_IC_FUNC_BUCK_GET_INPUT_CURR
+					OPLUS_IC_FUNC_BUCK_GET_INPUT_VOL
+					OPLUS_IC_FUNC_OTG_BOOST_ENABLE
+					OPLUS_IC_FUNC_BUCK_GET_CC_ORIENTATION
+					OPLUS_IC_FUNC_BUCK_GET_CHARGER_TYPE
+					OPLUS_IC_FUNC_BUCK_RERUN_BC12
+					OPLUS_IC_FUNC_BUCK_QC_DETECT_ENABLE
+					OPLUS_IC_FUNC_BUCK_SET_QC_CONFIG
+					OPLUS_IC_FUNC_BUCK_SET_PD_CONFIG
+					OPLUS_IC_FUNC_GET_SHUTDOWN_SOC
+					OPLUS_IC_FUNC_BACKUP_SOC
+					OPLUS_IC_FUNC_GET_TYPEC_MODE
+					OPLUS_IC_FUNC_SET_TYPEC_MODE
+					OPLUS_IC_FUNC_GET_TYPEC_ROLE
+					OPLUS_IC_FUNC_GET_OTG_ENABLE
+					OPLUS_IC_FUNC_BUCK_GET_HW_DETECT
+					OPLUS_IC_FUNC_SET_USB_DISCHG_ENABLE
+					OPLUS_IC_FUNC_GET_USB_DISCHG_STATUS
+					OPLUS_IC_FUNC_IS_OPLUS_SVID
+					OPLUS_IC_FUNC_BUCK_GET_USB_BTB_TEMP
+					OPLUS_IC_FUNC_BUCK_GET_BATT_BTB_TEMP
+					OPLUS_IC_FUNC_BUCK_SHIPMODE_ENABLE
+					OPLUS_IC_FUNC_BUCK_SET_AICL_POINT
+					OPLUS_IC_FUNC_SET_OTG_BOOST_CURR_LIMIT
+					OPLUS_IC_FUNC_BUCK_GET_FV
+					OPLUS_IC_FUNC_BUCK_GET_TYPEC_STATE
+					OPLUS_IC_FUNC_BUCK_GET_USB_AICL_ENHANCE
+				>;
+				virqs = <
+					OPLUS_IC_VIRQ_ERR
+					OPLUS_IC_VIRQ_CC_DETECT
+					OPLUS_IC_VIRQ_PLUGIN
+					OPLUS_IC_VIRQ_CC_CHANGED
+					OPLUS_IC_VIRQ_CHG_TYPE_CHANGE
+					OPLUS_IC_VIRQ_OTG_ENABLE
+					OPLUS_IC_VIRQ_SVID
+					OPLUS_IC_VIRQ_TYPEC_STATE
+				>;
+			};
+
+
+			mt6375_debug_groups: oplus,mt6375_debug_groups {
+				functions = <
+					OPLUS_IC_FUNC_INIT
+					OPLUS_IC_FUNC_EXIT
+				>;
+				virqs = <
+					OPLUS_IC_VIRQ_ERR
+				>;
+			};
+		};
+
+		oplus-gauge {
+			mt6375_gauge_groups: oplus,mt6375_gauge_groups {
+				functions = <
+					OPLUS_IC_FUNC_INIT
+					OPLUS_IC_FUNC_EXIT
+					OPLUS_IC_FUNC_REG_DUMP
+					OPLUS_IC_FUNC_SMT_TEST
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_VOL
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_MAX
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_MIN
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_CURR
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_TEMP
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_SOC
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_FCC
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_CC
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_RM
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_SOH
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_AUTH
+					OPLUS_IC_FUNC_GAUGE_SET_BATT_FULL
+					OPLUS_IC_FUNC_GAUGE_UPDATE_DOD0
+					OPLUS_IC_FUNC_GAUGE_UPDATE_SOC_SMOOTH
+					OPLUS_IC_FUNC_GAUGE_GET_CB_STATUS
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_NUM
+					OPLUS_IC_FUNC_GAUGE_GET_DEVICE_TYPE
+					OPLUS_IC_FUNC_GAUGE_GET_DEVICE_TYPE_FOR_VOOC
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_FCC
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_FC
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_QM
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_PD
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_RCU
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_RCF
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_FCU
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_FCF
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_SOU
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_DO0
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_DOE
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_TRM
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_PC
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_QS
+					OPLUS_IC_FUNC_GAUGE_IS_SUSPEND
+					OPLUS_IC_FUNC_GAUGE_GET_BCC_PARMS
+					OPLUS_IC_FUNC_GAUGE_FASTCHG_UPDATE_BCC_PARMS
+					OPLUS_IC_FUNC_GAUGE_GET_PREV_BCC_PARMS
+					OPLUS_IC_FUNC_GAUGE_SET_BCC_PARMS
+					OPLUS_IC_FUNC_GAUGE_SET_PROTECT_CHECK
+					OPLUS_IC_FUNC_GAUGE_GET_AFI_UPDATE_DONE
+					OPLUS_IC_FUNC_GAUGE_CHECK_RESET
+					OPLUS_IC_FUNC_GAUGE_GET_DEVICE_TYPE_FOR_BCC
+					OPLUS_IC_FUNC_GAUGE_GET_DOD0
+					OPLUS_IC_FUNC_GAUGE_GET_DOD0_PASSED_Q
+					OPLUS_IC_FUNC_GAUGE_GET_QMAX
+					OPLUS_IC_FUNC_GAUGE_GET_QMAX_PASSED_Q
+					OPLUS_IC_FUNC_GAUGE_SET_BATTERY_CURVE
+					OPLUS_IC_FUNC_GAUGE_GET_GAUGE_TYPE
+					OPLUS_IC_FUNC_GAUGE_GET_GAUGE_CAR_C
+					OPLUS_IC_FUNC_GAUGE_GET_SUB_BTB_CONNECT_STATE
+					OPLUS_IC_FUNC_GAUGE_GET_DEC_FG_TYPE
+					OPLUS_IC_FUNC_GAUGE_GET_DEC_CV_SOH
+					OPLUS_IC_FUNC_GAUGE_SET_VCT
+					OPLUS_IC_FUNC_GAUGE_GET_VCT
+				>;
+				virqs = <
+					OPLUS_IC_VIRQ_ERR
+					OPLUS_IC_VIRQ_OFFLINE
+					OPLUS_IC_VIRQ_RESUME
+				>;
+			};
+
+			mt6895_gauge_groups: oplus,mt6895_gauge_groups {
+				functions = <
+					OPLUS_IC_FUNC_INIT
+					OPLUS_IC_FUNC_EXIT
+					OPLUS_IC_FUNC_GAUGE_GET_SUBBOARD_TEMP
+				>;
+				virqs = <
+					OPLUS_IC_VIRQ_ERR
+				>;
+			};
+
+			maxim_encryption_gauge_groups: oplus,maxim_encryption_gauge_groups {
+				functions = <
+					OPLUS_IC_FUNC_INIT
+					OPLUS_IC_FUNC_EXIT
+					OPLUS_IC_FUNC_GAUGE_GET_BATT_HMAC
+				>;
+				virqs = <
+					OPLUS_IC_VIRQ_ERR
+				>;
+			};
+		};
+		oplus-cp {
+			sc8547_cp_groups: oplus,cp_groups {
+			functions = <
+					OPLUS_IC_FUNC_INIT
+					OPLUS_IC_FUNC_EXIT
+					OPLUS_IC_FUNC_REG_DUMP
+					OPLUS_IC_FUNC_SMT_TEST
+					OPLUS_IC_FUNC_CP_ENABLE
+					OPLUS_IC_FUNC_CP_HW_INTI
+					OPLUS_IC_FUNC_CP_SET_WORK_START
+					OPLUS_IC_FUNC_CP_CHECK_WORK_MODE_SUPPORT
+					OPLUS_IC_FUNC_CP_SET_WORK_MODE
+					OPLUS_IC_FUNC_CP_GET_WORK_MODE
+					OPLUS_IC_FUNC_CP_GET_VIN
+					OPLUS_IC_FUNC_CP_GET_IIN
+					OPLUS_IC_FUNC_CP_SET_IIN
+					OPLUS_IC_FUNC_CP_GET_VOUT
+					OPLUS_IC_FUNC_CP_GET_IOUT
+					OPLUS_IC_FUNC_CP_GET_VAC
+					OPLUS_IC_FUNC_CP_GET_WORK_STATUS
+					OPLUS_IC_FUNC_CP_SET_ADC_ENABLE
+					OPLUS_IC_FUNC_CP_WATCHDOG_ENABLE
+					OPLUS_IC_FUNC_CP_GET_IIN_MAX
+					OPLUS_IC_FUNC_CP_WATCHDOG_RESET
+				>;
+				virqs = <
+					OPLUS_IC_VIRQ_ERR
+					OPLUS_IC_VIRQ_ONLINE
+					OPLUS_IC_VIRQ_OFFLINE
+				>;
+			};
+		};
+	};
+};
+
+&soc {
+	mt6375_debug: oplus_mt6375_debug {
+		status = "okay";
+		compatible = "oplus,hal_mt6375";
+
+		oplus,tcpc_name = "type_c_port0";
+
+		oplus,ic_type = <OPLUS_CHG_IC_BUCK>;
+		oplus,ic_index = <2>;
+	};
+};
+
+&odm {
+	maxim_encryption_gauge: maxim_gauge {
+		status = "okay";
+		compatible = "oplus-maxim";
+		pinctrl-names = "maxim_active";
+		pinctrl-0 = <&maxim_active>;
+		support_encryption_in_lk;
+		data-gpio = <&pio 23 0x00>;
+		gpio-addr-set-out = <0x10005004>;
+		gpio-addr-set-in = <0x10005008>;
+		gpio-addr-level_high = <0x10005104>;
+		gpio-addr-level_low = <0x10005108>;
+		gpio-addr-data-in = <0x10005200>;
+		gpio-addr-offset = <0x17>;
+
+		oplus,batt_info = /bits/ 8 <0x36 0x31 0x31 0x33 0x30 0x33 0x30 0x30 0x30 0x32 0x32 0x38
+					    0x36 0x31 0x31 0x33 0x30 0x33 0x30 0x30 0x30 0x32 0x33 0x35>;
+		oplus,ic_type = <OPLUS_CHG_IC_GAUGE>;
+		oplus,ic_index = <2>;
+	};
+};
+
+&soc {
+	oplus,chg_gki {
+		compatible = "oplus,chg-gki";
+	};
+};
+
+&charger {
+	io-channels = <&mt6368_adc (ADC_PURES_100K_MASK | AUXADC_VIN1)>, <&pmic_adc AUXADC_VIN5>, <&pmic_adc AUXADC_VIN6>, <&pmic_adc AUXADC_VIN1>;
+	io-channel-names = "auxadc1-ntc_sub_bat_tem", "master_cp_temp", "sub_bat_btb_temp", "auxadc6_usb_btb_temp";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&charger_pins_default>;
+	oplus,support_ntc_01c_precision;
+	oplus,support_subboard_ntc;
+	max_charger_voltage = <15000000>;
+	/* ntc_resistance:100k internal_pull_up:100k voltage:1.84v */
+	oplus,ntc_temp_volt_1840mv;
+//	oplus,force_use_4250K_ntc;
+	oplus,cp_sub_btb_temp_share;
+	oplus,support_adc_vin;
+	adc_vin_reg = <0x1CC03560>; /* MT6685_vin5 for main_btb temp by Hardware Engineer,reg provide by MTK */
+	/* usbtemp dischg use pmic regulator to set vbus down */
+	oplus,support_usbtemp_dischg_reg_configurable;
+	oplus,usbtemp_dischg_reg_addr = <0x989>;
+	oplus,usbtemp_dischg_reg_mask = <0x7>;
+	oplus,usbtemp_dischg_enable = <0x2>;
+	oplus,usbtemp_dischg_disable = <0x0>;
+	oplus,usb_aicl_enhance;
+
+	oplus,ic_type = <OPLUS_CHG_IC_BUCK>;
+	oplus,ic_index = <0>;
+
+	oplus_mt6895_gauge: oplus,mt6895_gauge {
+		oplus,ic_type = <OPLUS_CHG_IC_GAUGE>;
+		oplus,ic_index = <1>;
+	};
+};
+
+&lk_charger {
+	en_vol_ctrl_vibrate = <3200>;
+	high-temp-scheme;
+	support_tuv_authentication;
+	charger_no_wiress;
+	support_battery_type = <2>;
+	support_maxim_battery_authentication;
+	data-gpio = <23>;
+	//cpu-id = <7>;
+	//key-id = <1>;
+	oplus,batt_info = /bits/ 8 <0x36 0x31 0x31 0x33 0x30 0x33 0x30 0x30 0x30 0x32 0x32 0x38
+				    0x36 0x31 0x31 0x33 0x30 0x33 0x30 0x30 0x30 0x32 0x33 0x35>;
+	oplus,batt_resource_info = /bits/ 8 <0 0>;
+	sub_board_temp_support;
+	over_high_temp_thr = <60>;
+	sub_board_adc_channel = <18>;		/* AUXADC_CHAN_VIN1 in LK, Use the MT6368 PMIC */
+	sub_board_adc_pmic = <1>;		/* Vivien use the MT6368 Pmic, in lk2 it's name is "second_pmic_sdmadc" */
+	sub_board_adc_pull_up_voltage = <1840>;
+	sub_board_adc_pures = <0>;	/* SDMADC_100K */
+
+	support_sdp_screenoff;
+	sdp_screenon_voltage = <3250>;
+	support_quickboot_charge;
+
+	/* mt6989 start */
+	led-brightness = <102>;
+	max-charger-voltage = <15000000>;
+	boot-battery-voltage = <3350000>;
+	usb-charger-current = <500000>;
+	ac-charger-current = <2050000>;
+	ac-charger-input-current = <1500000>;
+	non-std-ac-charger-current = <750000>;
+	charging-host-charger-current = <1500000>;
+	ta-ac-charger-current = <1500000>;
+	pd-charger-current = <500000>;
+};
+
+&soc {
+	oplus_mms_wired: oplus,mms_wired {
+		compatible = "oplus,mms_wired";
+		oplus,buck_ic = <&oplus_virtual_buck>;
+		oplus,voocphy_ic = <&oplus_virtual_vphy>;
+		oplus,adc_info_name = "100k_1840mv";
+		oplus_spec,usbtemp_batttemp_gap = <12>;
+		high-temp-scheme;
+
+		/* support for V2.0 usbtemp protect. */
+		oplus,support_usbtemp_protect_v2;
+		oplus_spec,usbtemp_batt_temp_low = <50>;
+		oplus_spec,usbtemp_batt_temp_high = <50>;
+		oplus_spec,usbtemp_batt_temp_over_hot = <60>;
+		oplus_spec,usbtemp_ntc_temp_low = <57>;
+		oplus_spec,usbtemp_ntc_temp_high = <69>;
+		oplus_spec,usbtemp_temp_gap_low_with_batt_temp = <7>;
+		oplus_spec,usbtemp_temp_gap_with_batt_temp_in_over_hot = <15>;
+		oplus_spec,usbtemp_temp_gap_high_with_batt_temp = <12>;
+		oplus_spec,usbtemp_temp_gap_low_without_batt_temp = <12>;
+		oplus_spec,usbtemp_temp_gap_high_without_batt_temp = <24>;
+		oplus_spec.usbtemp_rise_fast_temp_low = <3>;
+		oplus_spec.usbtemp_rise_fast_temp_high = <3>;
+		oplus_spec.usbtemp_rise_fast_temp_count_low = <30>;
+		oplus_spec.usbtemp_rise_fast_temp_count_high = <20>;
+		oplus_spec,usbtemp_cool_down_ntc_low = <54>;
+		oplus_spec,usbtemp_cool_down_ntc_high = <65>;
+		oplus_spec,usbtemp_cool_down_gap_low = <12>;
+		oplus_spec,usbtemp_cool_down_gap_high = <20>;
+		oplus_spec,usbtemp_cool_down_recover_ntc_low = <48>;
+		oplus_spec,usbtemp_cool_down_recover_ntc_high = <60>;
+		oplus_spec,usbtemp_cool_down_recover_gap_low = <6>;
+		oplus_spec,usbtemp_cool_down_recover_gap_high = <15>;
+
+		oplus_virtual_buck: oplus,virtual_buck {
+			compatible = "oplus,virtual_buck";
+			oplus,buck_ic = <&charger &mt6375_debug>;
+			oplus,buck_ic_index = <0 1>;
+			oplus,buck_ic_current_ratio = <100 0>;
+			oplus,buck_ic_connect = <OPLUS_CHG_IC_CONNECT_PARALLEL>;
+			oplus,main_charger = <0>;
+			oplus,buck_ic_func_group = <&mtk_6895_groups &mt6375_debug_groups>;
+
+			oplus,ic_type = <OPLUS_CHG_IC_VIRTUAL_BUCK>;
+			oplus,ic_index = <0>;
+
+			io-channels = <&pmic_adc AUXADC_VIN3>, <&pmic_adc AUXADC_VIN4>;
+			io-channel-names = "usb_temp_adc_l", "usb_temp_adc_r";
+
+			oplus,uart_tx-gpio = <&pio 207 0x00>;
+			oplus,uart_rx-gpio = <&pio 208 0x00>;
+		};
+	};
+
+	oplus_mms_gauge: oplus,mms_gauge {
+		compatible = "oplus,mms_gauge";
+		oplus,gauge_ic = <&oplus_virtual_gauge>;
+		oplus,voocphy_ic = <&oplus_virtual_vphy>;
+		oplus,topic-update-interval = <10000>;
+		oplus,support_subboard_ntc;
+		oplus,sub_btb_curr_limit = <3000>; /* Online current limiting, provided by hardware engineer */
+
+		oplus_virtual_gauge: oplus,virtual_gauge {
+			compatible = "oplus,virtual_gauge";
+			oplus,gauge_ic = <&mt6375_gauge &oplus_mt6895_gauge &maxim_encryption_gauge>;
+			oplus,gauge_ic_index = <0 1 2>;
+			oplus,gauge_ic_func_group = <&mt6375_gauge_groups &mt6895_gauge_groups &maxim_encryption_gauge_groups>;
+			oplus,batt_capacity_mah = <7100>;
+			oplus,ic_type = <OPLUS_CHG_IC_VIRTUAL_GAUGE>;
+			oplus,ic_index = <0>;
+		};
+	};
+};
+
+&soc {
+	oplus_battery_log: oplus,battery_log {
+		compatible = "oplus,battery_log";
+		oplus,battery_log_support;
+	};
+
+	oplus_chg_wired: oplus,wired {
+		compatible = "oplus,wired";
+
+		oplus,vooc-support;
+
+		oplus_spec,vbatt_pdqc_to_5v_thr = <4500>;
+		oplus_spec,vbatt_pdqc_to_9v_thr = <4500>;
+		oplus_spec,pd-iclmax-ma = <1500>;
+		oplus_spec,qc-iclmax-ma = <1500>;
+		oplus_spec,non-standard-ibatmax-ma = <500>;
+		oplus_spec,input-power-mw = <
+			500	    	/* OPLUS_WIRED_CHG_MODE_UNKNOWN */
+			2500		/* OPLUS_WIRED_CHG_MODE_SDP */
+			7500		/* OPLUS_WIRED_CHG_MODE_CDP */
+			10000		/* OPLUS_WIRED_CHG_MODE_DCP */
+			15000		/* OPLUS_WIRED_CHG_MODE_VOOC */
+			13500		/* OPLUS_WIRED_CHG_MODE_QC */
+			13500		/* OPLUS_WIRED_CHG_MODE_PD */
+		>;
+		oplus_spec,led_on-fccmax-ma = <0 1732 3300 3300 3300 3300 3300 1000 0>;
+		oplus_spec,fccmax-ma-lv = <
+			0 1732 2200 2200 2200 2200 2200 2200 0	/* OPLUS_WIRED_CHG_MODE_UNKNOWN */
+			0 600  600  600  600  600  600  600  0	/* OPLUS_WIRED_CHG_MODE_SDP */
+			0 1600 1600 1600 1600 1600 1600 1600 0	/* OPLUS_WIRED_CHG_MODE_CDP */
+			0 1732 2200 2200 2200 2200 2200 2200 0	/* OPLUS_WIRED_CHG_MODE_DCP */
+			0 1732 3300 3300 3300 3300 3300 3300 0	/* OPLUS_WIRED_CHG_MODE_VOOC */
+			0 1732 3300 3300 3300 3300 3300 3300 0	/* OPLUS_WIRED_CHG_MODE_QC */
+			0 1732 3300 3300 3300 3300 3300 3300 0	/* OPLUS_WIRED_CHG_MODE_PD */
+		>;
+		oplus_spec,fccmax-ma-hv = <
+			0 1732 2200 2200 2200 2200 2200 1000 0	/* OPLUS_WIRED_CHG_MODE_UNKNOWN */
+			0 600  600  600  600  600  600  500  0	/* OPLUS_WIRED_CHG_MODE_SDP */
+			0 1600 1600 1600 1600 1600 1600 1000 0	/* OPLUS_WIRED_CHG_MODE_CDP */
+			0 1732 2200 2200 2200 2200 2200 1000 0	/* OPLUS_WIRED_CHG_MODE_DCP */
+			0 1732 3300 3300 3300 3300 3300 1000 0	/* OPLUS_WIRED_CHG_MODE_VOOC */
+			0 1732 3300 3300 3300 3300 3300 1000 0	/* OPLUS_WIRED_CHG_MODE_QC */
+			0 1732 3300 3300 3300 3300 3300 1000 0	/* OPLUS_WIRED_CHG_MODE_PD */
+		>;
+
+		oplus_spec,cool_down_sale_pdqc_vol_mv = <5000>;
+		oplus_spec,cool_down_sale_pdqc_curr_ma = <1200>;
+		oplus_spec,cool_down_pdqc_vol_mv = <5000 5000 5000 9000>;
+		oplus_spec,cool_down_pdqc_curr_ma = <1200 1500 2000 1500>;
+		oplus_spec,cool_down_vooc_curr_ma = <1200 1500 2000 2500 3000 3000>;
+		oplus_spec,cool_down_normal_curr_ma = <1200 1500 2000>;
+
+		oplus_spec,vbus_ov_thr_mv = <11000 11000>;
+		oplus_spec,vbus_uv_thr_mv = <4300 4300>;
+
+		/* first data is strategy used temp type */
+		oplus,pd_strategy_name = "cgcl";
+		oplus,pd_strategy_data = <OPLUS_STRATEGY_USE_SHELL_TEMP
+					    0   420 2000 1 0
+					    410 430 1500 2 0
+					    420 440 1200 2 1>;
+		oplus,qc_strategy_name = "cgcl";
+		oplus,qc_strategy_data = <OPLUS_STRATEGY_USE_SHELL_TEMP
+					    0   420 2000 1 0
+					    410 430 1500 2 0
+					    420 440 1200 2 1>;
+	};
+
+	oplus_chg_comm: oplus,comm {
+		compatible = "oplus,common-charge";
+		oplus_spec,dec_step = <20>;
+		oplus_spec,dec-vol-cc-full-thr = <0 400 600 800 1000 1200>;
+		oplus_spec,dec-vol-fv-full-mv = <0 20 20 40 40 40>;
+		oplus_spec,batt-them-thr = <(-100) 0 50 120 160 350 450 530>;
+		oplus_spec,iterm-ma = <365>; /* 7100*0.05+10 */
+		oplus_spec,removed_bat_decidegc = <390>; /*-39 degree*/
+		oplus_spec,fv-mv = <4490 4490 4490 4490 4490 4490 4470 4130 4130>;
+		oplus_spec,sw-fv-mv = <4440 4440 4440 4440 4440 4440 4420 4080 4080>;
+		oplus_spec,hw-fv-inc-mv = <0 18 18 18 18 18 18 18 0>;
+		oplus_spec,sw-over-fv-mv = <4500 4500 4500 4500 4500 4500 4480 4140 4140>;
+		oplus_spec,sw-over-fv-dec-mv = <8>;
+		oplus_spec,non-standard-sw-fv-mv = <3930>;
+		oplus_spec,non-standard-fv-mv = <3980>;
+		oplus_spec,non-standard-hw-fv-inc-mv = <18>;
+		oplus_spec,non-standard-sw-over-fv-mv = <3990>;
+		oplus_spec,non-standard-vbatdet-mv = <3680>;
+		oplus_spec,wired-vbatdet-mv = <0 4190 4290 4390 4390 4390 4370 4030 0>;
+		oplus_spec,fcc-gear-thr-mv = <4180>;
+		oplus_spec,vbatt-ov-thr-mv = <4600>;
+
+		oplus_spec,full_pre_ffc_judge;
+		oplus_spec,full-pre-ffc-mv = <4500>;
+		oplus_spec,ffc-temp-thr = <120 210 350 440>;
+		oplus_spec,wired-ffc-step-max = <2>;
+		oplus_spec,wired-ffc-fv-mv = <4630 4630>;
+
+		oplus_spec,wired-ffc-fv-cutoff-mv = <4565 4530 4505
+						     4565 4510 4490>;
+		oplus_spec,wired-ffc-fcc-ma = <1750 1500 1500
+					       1650 1000 1000>;
+		oplus_spec,wired-ffc-fcc-cutoff-ma = <1550 1300 1300
+						      1450 900 900>;
+		oplus_spec,vbat_uv_thr_mv = <3300>;
+		oplus_spec,vbat_charging_uv_thr_mv = <3200>;
+
+		/*If use subboard NTC as battery temp, config it as 20, otherwise 0 */
+		oplus_spec,tbatt_power_off_cali_temp = <0>;
+		oplus_spec,poweroff_high_batt_temp = <720>;
+		oplus_spec,poweroff_emergency_batt_temp = <770>;
+		oplus,vooc_show_ui_soc_decimal;
+		oplus,ui_soc_decimal_speedmin = <20>;
+		oplus,gauge_stuck_jump_support;
+		oplus,gauge_stuck_threshold = <15>;
+		oplus,gauge_stuck_time = <50>;
+	};
+
+	oplus_monitor: oplus,monitor {
+		compatible = "oplus,monitor";
+		oplus,topic-update-interval = <60000>;
+
+		track,fast_chg_break_t_thd = <1000>;
+		track,general_chg_break_t_thd = <200>;
+		track,voocphy_type = <3>;
+		track,wired_max_power = <80000>;
+		track,wired_fast_chg_scheme = <2>;
+	};
+
+	oplus_vooc: oplus,vooc {
+		compatible = "oplus,vooc";
+		oplus,vooc_ic = <&oplus_virtual_vphy>;
+
+		oplus_spec,vooc_soc_range = <50 75 85>;
+
+		oplus,vooc_data_width = <7>;
+		oplus,vooc_curr_max = <CP_CURR_LIMIT_7BIT_15_0A>; /* 80W: 11V 7.3A(IBUS *2) */
+		oplus,vooc_power_max_w = <80>;
+		oplus,vooc_project = <7>;
+		oplus,vooc_curr_table_type = <VOOC_CP_CURR_TABLE>;
+		oplus,voocphy_support = <3>; /* AP_DUAL_CP_VOOCPHY */
+		oplus,support_fake_vooc_check;
+		oplus,subboard_ntc_abnormal_current = <4000>;
+		oplus,cp_cooldown_limit_percent_75 = <CP_CURR_LIMIT_7BIT_4_0A>;
+		oplus,cp_cooldown_limit_percent_85 = <CP_CURR_LIMIT_7BIT_2_0A>;
+
+		oplus,abnormal_adapter_current = <CP_CURR_LIMIT_7BIT_15_0A CP_CURR_LIMIT_7BIT_15_0A
+						CP_CURR_LIMIT_7BIT_12_6A CP_CURR_LIMIT_7BIT_12_6A
+						CP_CURR_LIMIT_7BIT_10_0A CP_CURR_LIMIT_7BIT_10_0A
+						CP_CURR_LIMIT_7BIT_8_0A CP_CURR_LIMIT_7BIT_8_0A
+						CP_CURR_LIMIT_7BIT_6_0A CP_CURR_LIMIT_7BIT_6_0A
+						CP_CURR_LIMIT_7BIT_4_0A CP_CURR_LIMIT_7BIT_4_0A>;
+
+		oplus,abnormal_over_80w_adapter_current = <CP_CURR_LIMIT_7BIT_15_0A CP_CURR_LIMIT_7BIT_15_0A
+						CP_CURR_LIMIT_7BIT_14_0A CP_CURR_LIMIT_7BIT_14_0A
+						CP_CURR_LIMIT_7BIT_12_0A CP_CURR_LIMIT_7BIT_12_0A
+						CP_CURR_LIMIT_7BIT_10_0A CP_CURR_LIMIT_7BIT_10_0A
+						CP_CURR_LIMIT_7BIT_8_0A CP_CURR_LIMIT_7BIT_8_0A
+						CP_CURR_LIMIT_7BIT_6_0A CP_CURR_LIMIT_7BIT_6_0A
+						CP_CURR_LIMIT_7BIT_4_0A CP_CURR_LIMIT_7BIT_4_0A>;
+
+		/* first data is strategy used temp type */
+		oplus,general_strategy_name = "cgcl";
+		oplus,general_strategy_data = <OPLUS_STRATEGY_USE_SHELL_TEMP
+						0   385 CP_CURR_LIMIT_7BIT_15_0A 1 0
+						375 395 CP_CURR_LIMIT_7BIT_12_6A 2 0
+						385 420 CP_CURR_LIMIT_7BIT_8_0A 3 1
+						410 440 CP_CURR_LIMIT_7BIT_6_0A 3 2>;
+
+		oplus,bypass_strategy_name = "cgcl";
+		oplus,bypass_strategy_data = <OPLUS_STRATEGY_USE_SHELL_TEMP
+						0   350 CP_CURR_LIMIT_7BIT_6_0A  1 0
+						340 380 CP_CURR_LIMIT_7BIT_5_0A  2 0
+						370 440 CP_CURR_LIMIT_7BIT_4_0A  2 1>;
+
+		oplus,plc_strategy-data = <&buck_simple_strategy &cp_2t1_simple_strategy &cp_1t1_simple_strategy>;
+		oplus,plc_strategy-names = "default", "svooc", "vooc";
+
+		oplus_virtual_vphy: oplus,virtual_vphy {
+			compatible = "oplus,virtual_vphy";
+			oplus,vphy_ic = <&oplus_sc8547a>;
+
+			oplus,ic_type = <OPLUS_CHG_IC_VIRTUAL_VPHY>;
+			oplus,ic_index = <0>;
+			oplus,dpdm_switch_ic = <&oplus_virtual_dpdm_switch>;
+		};
+	};
+
+	oplus_chg_quirks: oplus,chg_quirks {
+		compatible = "oplus,chg_quirks";
+	};
+	oplus_retention_charge: oplus,retention_charge {
+		compatible = "oplus,retention_charge";
+		oplus,topic-update-interval = <5000>;
+		oplus,support_retention_name = "oplus_retention_quirks";
+	};
+
+	oplus_cpa: oplus,cpa {
+		compatible = "oplus,cpa";
+		oplus,protocol_list = <CHG_PROTOCOL_PD 18
+				       CHG_PROTOCOL_VOOC 80
+				       CHG_PROTOCOL_QC 18>;
+		oplus,default_protocol_list = <CHG_PROTOCOL_PD
+					       CHG_PROTOCOL_VOOC>;
+	};
+
+	oplus_virtual_cp: oplus,virtual_cp {
+		compatible = "oplus,virtual_cp";
+
+		oplus,ic_type = <OPLUS_CHG_IC_VIRTUAL_CP>;
+		oplus,ic_index = <0>;
+
+		oplus,cp_ic = <&oplus_sc8547_cp &oplus_sc8547_slave_cp>;
+		oplus,input_curr_max_ma = <3000 3000>;
+
+		oplus,cp_ic_connect = <OPLUS_CHG_IC_CONNECT_PARALLEL>;
+		oplus,main_cp = <0>;
+
+		oplus,reg_proc_node;
+
+		oplus,cp_strategy = <CP_STRAT_OPEN_BY_CURR>;
+		oplus,cp_strategy_data {
+			oplus,cp_open_curr_thr_ma = <0 1900>;
+			oplus,cp_close_curr_thr_ma = <0 1600>;
+		};
+	};
+
+	oplus_virtual_dpdm_switch: oplus,virtual_dpdm_switch {
+		compatible = "oplus,virtual_dpdm_switch";
+		oplus,ic_type = <OPLUS_CHG_IC_MISC>;
+		oplus,ic_index = <0>;
+
+		oplus,switch_ctrl-gpio = <&pio 128 0x00>;
+		pinctrl-names = "switch_ctrl_ap", "switch_ctrl_vooc", "switch_ctrl_ufcs";
+		pinctrl-0 = <&switch_ctrl_ap>;
+		pinctrl-1 = <&switch_ctrl_vooc>;
+		pinctrl-2 = <&switch_ctrl_ufcs>;
+	};
+
+	oplus_smart_charge: oplus,smart_charge {
+		compatible = "oplus,smart_charge";
+		oplus,quick_mode_gain_support;
+	};
+};
+
+&i2c12 {
+	status = "okay";
+	clock-frequency = <400000>;
+	oplus_sc8547a: oplus,sc8547a@6F {
+		status = "okay";
+		compatible = "oplus,sc8547a";
+		reg = <0x6F>;
+
+		oplus,use_vooc_phy;
+		oplus_spec,irq_gpio = <&pio 40 0x00>;
+		interrupt-parent = <&pio>;
+		interrupts = <9 0>;
+
+		pinctrl-names = "charging_inter_active", "charging_inter_sleep", "i2c-state", "output-low-state";
+		pinctrl-0 = <&charging_inter_active>;
+		pinctrl-1 = <&charging_inter_sleep>;
+		pinctrl-2 = <&i2c12_i2c_state>;
+		pinctrl-3 = <&i2c12_output_low_state>;
+
+		oplus,ic_type = <OPLUS_CHG_IC_VPHY>;
+		oplus,ic_index = <0>;
+		oplus,vooc-version = <VOOC_VERSION_5_0>;
+
+		ocp_reg = <0xd>;
+		ovp_reg = <0x36>;/* vbat ovp 4.85v */
+		vbus_ovp_reg = /bits/ 8 <0x5A>;  /* vbus ovp: 10.5v */
+		vooc_vbus_ovp_reg = /bits/ 8 <0x64>;  /* vbus ovp: 11v */
+		oplus_spec,voocphy_dual_cp_support;
+		oplus_spec,slave_cp_enable_thr = <1400>;		//2000-100mA
+		oplus_spec,slave_cp_disable_thr_high = <1100>;	//1500+100mA
+		oplus_spec,voocphy_current_default = <73>;
+		oplus_spec,ap_control_allow;
+
+		oplus_spec,svooc_cool_down_current_limit = <146 20 20 24 30 34 40 44 50 54 60 64 70 74>;
+		oplus_spec,vooc_cool_down_current_limit = <73 20 20 24 30 34 40 44 50 54 60 64 70 74>;
+
+		oplus_spec,vooc_low_temp = <0>;
+		oplus_spec,vooc_little_cold_temp = <50>;
+		oplus_spec,vooc_cool_temp = <120>;
+		oplus_spec,vooc_little_cool_temp = <160>;
+		oplus_spec,vooc_little_cool_high_temp = <210>;
+		oplus_spec,vooc_normal_low_temp = <350>;
+		oplus_spec,vooc_normal_high_temp = <440>;
+		oplus_spec,vooc_high_temp = <500>;
+		oplus_spec,vooc_over_high_temp = <510>;
+		oplus_spec,vooc_strategy_normal_current = <122>;
+		oplus_spec,vooc_normal_to_little_cool_current = <100>;
+		oplus_spec,vooc_multistep_initial_batt_temp = <1000>;
+		oplus_spec,fastchg_timeout_time_init = <178200>;
+
+		oplus_spec,vooc_low_soc = <0>;
+		oplus_spec,vooc_high_soc = <90>;
+
+		oplus_spec,vooc_warm_vol_thr = <4000>;
+		oplus_spec,vooc_warm_soc_thr = <50>;
+
+		oplus_spec,vooc_strategy1_batt_high_temp0 = <385>;
+		oplus_spec,vooc_strategy1_batt_high_temp1 = <395>;
+		oplus_spec,vooc_strategy1_batt_high_temp2 = <420>;
+		oplus_spec,vooc_strategy1_batt_low_temp2 = <410>;
+		oplus_spec,vooc_strategy1_batt_low_temp1 = <385>;
+		oplus_spec,vooc_strategy1_batt_low_temp0 = <375>;
+
+		oplus_spec,vooc_strategy1_high_current0 = <80>;
+		oplus_spec,vooc_strategy1_high_current1 = <61>;
+		oplus_spec,vooc_strategy1_high_current2 = <40>;
+		oplus_spec,vooc_strategy1_low_current2 = <40>;
+		oplus_spec,vooc_strategy1_low_current1 = <61>;
+		oplus_spec,vooc_strategy1_low_current0 = <80>;
+
+		oplus_spec,voocphy_freq_mincore = <1800000>;
+		oplus_spec,voocphy_freq_midcore = <1800000>;
+		oplus_spec,voocphy_freq_maxcore = <1800000>;
+		oplus_spec,voocphy_current_change_timeout = <100>;
+		oplus_spec,copycat_vooc_support;
+		oplus_spec,copycat_vooc_accuracy_value = <105>;
+
+		oplus_spec,voocphy_ibat_over_current = <16000>;
+		oplus_spec,voocphy_svooc_cp_max_ibus = <4500>;
+		oplus_spec,voocphy_vooc_cp_max_ibus = <4500>;
+		oplus_spec,voocphy_cp_max_ibus = <4500>;
+
+		oplus_spec,vooc_little_cold_full_voltage = <4570>;
+		oplus_spec,vooc_cool_full_voltage = <4570>;
+		oplus_spec,vooc_little_cool_full_voltage = <4570>;
+		oplus_spec,vooc_little_cool_high_full_voltage = <4570>;
+		oplus_spec,vooc_warm_full_voltage = <4130>;
+		oplus_spec,vooc_1time_full_voltage = <4580>;
+		oplus_spec,vooc_ntime_full_voltage = <4570>;
+		oplus_spec,soc_range = <0 20 35 55 75 85 90>;
+
+		svooc_batt_sys_curve = <0 1 0 1 0 0 0	// 4000mA
+					1 1 1 1 0 0 0	// 4604mV
+					0 0 1 1 0 1 0	// 2600mA
+					1 1 1 1 0 0 0	// 4604mV
+					0 0 0 1 0 1 1	// 1100mA
+					1 1 1 1 0 0 0>;	// 4604mV
+
+		vooc_batt_sys_curve =  <0 1 0 1 0 0 0	// 4000mA
+					1 1 1 1 0 0 0	// 4604mV
+					0 0 1 1 0 1 0	// 2600mA
+					1 1 1 1 0 0 0	// 4604mV
+					0 0 0 1 0 1 1	// 1100mA
+					1 1 1 1 0 0 0>;	// 4604mV
+
+		svooc_lcf_strategy {
+			oplus,temp_type = <OPLUS_STRATEGY_USE_SHELL_TEMP>;
+			oplus,temp_range = <0 50 120 160 210 380 440>;
+
+			strategy_temp_range_curves {
+				strategy_temp_range_t0 =	<800 4570 0
+								 750 4560 0
+								 700 4550 0
+								 650 4540 0
+								 600 4530 1>;
+				strategy_temp_range_t1 =	<950 4570 0
+								 900 4565 0
+								 850 4550 0
+								 750 4540 0
+								 650 4530 1>;
+				strategy_temp_range_t2 =	<1050 4570 0
+								 1000 4565 0
+								 900 4550 0
+								 800 4540 0
+								 650 4530 1>;
+				strategy_temp_range_t3 =	<1600 4570 0
+								 1550 4565 0
+								 1450 4550 0
+								 1350 4540 0
+								 1200 4530 1>;
+				strategy_temp_range_t4 =	<2150 4549 0
+								 1950 4540 0
+								 1650 4529 0
+								 1350 4515 0
+								 1000 4495 1>;
+				strategy_temp_range_t5 =	<2850 4558 0
+								 2650 4535 0
+								 2100 4512 0
+								 1550 4495 0
+								 1000 4480 1>;
+			};
+		};
+
+		svooc_charge_strategy {
+			strategy_soc_0_to_50 { /* 0 ~ 20 */
+				strategy_temp_little_cold =	<4150 39 0 0 0
+								4150 35 0 0 0
+								4150 30 0 0 0
+								4510 26 0 0 0
+								4510 25 0 0 0
+								4510 20 0 0 0
+								4560 19 0 0 0
+								4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_cool =		<4150 49 0 0 0
+								4150 45 0 0 0
+								4150 40 0 0 0
+								4510 39 0 0 0
+								4510 35 0 0 0
+								4510 30 0 0 0
+								4560 26 0 0 0
+								4560 25 0 0 0
+								4560 20 0 0 0
+								4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_little_cool =	<4150 73 0 60 0
+								4150 61 0 360 0
+								4510 59 0 480 0
+								4510 50 0 480 0
+								4560 46 0 480 0
+								4560 40 0 480 0
+								4560 35 0 0 0
+								4560 30 0 0 0
+								4560 25 0 0 0
+								4560 20 0 0 0
+								4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_little_cool_high =	<4280 73 0 60 0
+								4510 63 0 840 0
+								4510 50 0 480 0
+								4560 46 0 480 0
+								4560 40 0 960 0
+								4560 35 0 0 0
+								4560 30 0 0 0
+								4560 25 0 0 0
+								4560 20 0 0 0
+								4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_normal_low =	<4280 73 0 60 0
+								4510 63 0 840 0
+								4510 50 0 480 0
+								4560 46 0 480 0
+								4560 40 0 960 0
+								4560 35 0 0 0
+								4560 30 0 0 0
+								4560 25 0 0 0
+								4560 20 0 0 0
+								4560 15 0 0 0
+								4565 11 1 0 0>;
+				strategy_temp_normal_high =	<4280 73 0 60 0
+								4510 63 0 840 0
+								4510 50 0 480 0
+								4560 46 0 480 0
+								4560 40 0 960 0
+								4560 35 0 0 0
+								4560 30 0 0 0
+								4560 25 0 0 0
+								4560 20 0 0 0
+								4565 15 1 0 0>;
+				strategy_temp_warm =		<4120 19 0 0 0
+								4120 15 0 0 0
+								4130 10 1 0 0>;
+			};
+
+			strategy_soc_0_to_50_mid { /* 21 ~ 35 */
+				strategy_temp_little_cold =	<4150 39 0 0 0
+								4150 35 0 0 0
+								4150 30 0 0 0
+								4510 26 0 0 0
+								4510 25 0 0 0
+								4510 20 0 0 0
+								4560 19 0 0 0
+								4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_cool =		<4150 49 0 0 0
+								4150 45 0 0 0
+								4150 40 0 0 0
+								4510 39 0 0 0
+								4510 35 0 0 0
+								4510 30 0 0 0
+								4560 26 0 0 0
+								4560 25 0 0 0
+								4560 20 0 0 0
+								4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_little_cool =	<4150 73 0 60 0
+								4150 61 0 360 0
+								4510 59 0 480 0
+								4510 50 0 480 0
+								4560 46 0 480 0
+								4560 40 0 480 0
+								4560 35 0 0 0
+								4560 30 0 0 0
+								4560 25 0 0 0
+								4560 20 0 0 0
+								4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_little_cool_high =	<4280 73 0 60 0
+								4510 63 0 840 0
+								4510 50 0 480 0
+								4560 46 0 480 0
+								4560 40 0 960 0
+								4560 35 0 0 0
+								4560 30 0 0 0
+								4560 25 0 0 0
+								4560 20 0 0 0
+								4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_normal_low =	<4280 73 0 60 0
+								4510 63 0 840 0
+								4510 50 0 480 0
+								4560 46 0 480 0
+								4560 40 0 960 0
+								4560 35 0 0 0
+								4560 30 0 0 0
+								4560 25 0 0 0
+								4560 20 0 0 0
+								4560 15 0 0 0
+								4565 11 1 0 0>;
+				strategy_temp_normal_high =	<4280 73 0 60 0
+								4510 63 0 840 0
+								4510 50 0 480 0
+								4560 46 0 480 0
+								4560 40 0 960 0
+								4560 35 0 0 0
+								4560 30 0 0 0
+								4560 25 0 0 0
+								4560 20 0 0 0
+								4565 15 1 0 0>;
+				strategy_temp_warm =		<4120 19 0 0 0
+								4120 15 0 0 0
+								4130 10 1 0 0>;
+			};
+
+			strategy_soc_0_to_50_high { /* 36 ~ 55 */
+				strategy_temp_little_cold =	<4510 20 0 0 0
+								4560 19 0 0 0
+								4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_cool =		<4560 25 0 0 0
+								4560 20 0 0 0
+								4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_little_cool =	<4560 40 0 0 0
+								4560 35 0 0 0
+								4560 30 0 0 0
+								4560 25 0 0 0
+								4560 20 0 0 0
+								4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_little_cool_high =	<4560 40 0 0 0
+								4560 35 0 0 0
+								4560 30 0 0 0
+								4560 25 0 0 0
+								4560 20 0 0 0
+								4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_normal_low =	<4280 73 0 60 0
+								4510 63 0 840 0
+								4510 50 0 480 0
+								4560 46 0 480 0
+								4560 40 0 960 0
+								4560 35 0 0 0
+								4560 30 0 0 0
+								4560 25 0 0 0
+								4560 20 0 0 0
+								4560 15 0 0 0
+								4565 11 1 0 0>;
+				strategy_temp_normal_high =	<4280 73 0 60 0
+								4510 63 0 840 0
+								4510 50 0 480 0
+								4560 46 0 480 0
+								4560 40 0 960 0
+								4560 35 0 0 0
+								4560 30 0 0 0
+								4560 25 0 0 0
+								4560 20 0 0 0
+								4565 15 1 0 0>;
+				strategy_temp_warm =		<4120 19 0 0 0
+								4120 15 0 0 0
+								4130 10 1 0 0>;
+			};
+
+			strategy_soc_50_to_75 { /* 56 ~ 75 */
+				strategy_temp_little_cold =	<4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_cool =		<4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_little_cool =	<4560 20 0 0 0
+								4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_little_cool_high =	<4560 20 0 0 0
+								4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_normal_low =	<4560 25 0 0 0
+								4560 20 0 0 0
+								4560 15 0 0 0
+								4565 11 1 0 0>;
+				strategy_temp_normal_high =	<4560 30 0 0 0
+								4560 25 0 0 0
+								4560 20 0 0 0
+								4565 15 1 0 0>;
+				strategy_temp_warm =		<4120 15 0 0 0
+								4130 10 1 0 0>;
+			};
+
+			strategy_soc_75_to_85 { /* 76 ~ 85 */
+				strategy_temp_little_cold =	<4570 10 1 0 0>;
+				strategy_temp_cool =		<4570 10 1 0 0>;
+				strategy_temp_little_cool =	<4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_little_cool_high =	<4560 15 0 0 0
+								4570 10 1 0 0>;
+				strategy_temp_normal_low =	<4560 15 0 0 0
+								4565 11 1 0 0>;
+				strategy_temp_normal_high =	<4560 20 0 0 0
+								4565 15 1 0 0>;
+				strategy_temp_warm =		<4120 15 0 0 0
+								4130 10 1 0 0>;
+			};
+
+			strategy_soc_85_to_90 { /* 86 ~ 95 */
+				strategy_temp_little_cold =	<4570 10 1 0 0>;
+				strategy_temp_cool =		<4570 10 1 0 0>;
+				strategy_temp_little_cool =	<4570 10 1 0 0>;
+				strategy_temp_little_cool_high = <4570 10 1 0 0>;
+				strategy_temp_normal_low =	<4565 11 1 0 0>;
+				strategy_temp_normal_high =	<4565 15 1 0 0>;
+				strategy_temp_warm =		<4130 10 1 0 0>;
+			};
+		};
+
+		vooc_charge_strategy {
+			strategy_soc_0_to_50 {
+				strategy_temp_little_cold =	<4150 60 0 0 0
+								4510 52 0 0 0
+								4510 50 0 0 0
+								4510 40 0 0 0
+								4560 38 0 0 0
+								4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_cool =		<4510 60 0 0 0
+								4560 52 0 0 0
+								4560 50 0 0 0
+								4560 40 0 0 0
+								4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_little_cool =	<4560 60 0 0 0
+								4560 50 0 0 0
+								4560 40 0 0 0
+								4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_little_cool_high =	<4560 60 0 0 0
+								4560 50 0 0 0
+								4560 40 0 0 0
+								4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_normal_low =	<4560 60 0 0 0
+								4560 50 0 0 0
+								4560 40 0 0 0
+								4560 30 0 0 0
+								4565 22 1 0 0>;
+				strategy_temp_normal_high =	<4560 60 0 0 0
+								4560 50 0 0 0
+								4560 40 0 0 0
+								4565 30 1 0 0>;
+				strategy_temp_warm =		<4120 38 0 0 0
+								4120 30 0 0 0
+								4130 20 1 0 0>;
+			};
+
+			strategy_soc_0_to_50_mid {
+				strategy_temp_little_cold =	<4150 60 0 0 0
+								4510 52 0 0 0
+								4510 50 0 0 0
+								4510 40 0 0 0
+								4560 38 0 0 0
+								4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_cool =		<4510 60 0 0 0
+								4560 52 0 0 0
+								4560 50 0 0 0
+								4560 40 0 0 0
+								4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_little_cool =	<4560 60 0 0 0
+								4560 50 0 0 0
+								4560 40 0 0 0
+								4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_little_cool_high =	<4560 60 0 0 0
+								4560 50 0 0 0
+								4560 40 0 0 0
+								4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_normal_low =	<4560 60 0 0 0
+								4560 50 0 0 0
+								4560 40 0 0 0
+								4560 30 0 0 0
+								4565 22 1 0 0>;
+				strategy_temp_normal_high =	<4560 60 0 0 0
+								4560 50 0 0 0
+								4560 40 0 0 0
+								4565 30 1 0 0>;
+				strategy_temp_warm =		<4120 38 0 0 0
+								4120 30 0 0 0
+								4130 20 1 0 0>;
+			};
+
+			strategy_soc_0_to_50_high {
+				strategy_temp_little_cold =	<4510 40 0 0 0
+								4560 38 0 0 0
+								4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_cool =		<4560 50 0 0 0
+								4560 40 0 0 0
+								4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_little_cool =	<4560 60 0 0 0
+								4560 50 0 0 0
+								4560 40 0 0 0
+								4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_little_cool_high =	<4560 60 0 0 0
+								4560 50 0 0 0
+								4560 40 0 0 0
+								4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_normal_low =	<4560 60 0 0 0
+								4560 50 0 0 0
+								4560 40 0 0 0
+								4560 30 0 0 0
+								4565 22 1 0 0>;
+				strategy_temp_normal_high =	<4560 60 0 0 0
+								4560 50 0 0 0
+								4560 40 0 0 0
+								4565 30 0 0 0>;
+				strategy_temp_warm =		<4120 38 0 0 0
+								4120 30 0 0 0
+								4130 20 1 0 0>;
+			};
+
+			strategy_soc_50_to_75 {
+				strategy_temp_little_cold =	<4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_cool =		<4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_little_cool =	<4560 40 0 0 0
+								4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_little_cool_high =	<4560 40 0 0 0
+								4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_normal_low =	<4560 50 0 0 0
+								4560 40 0 0 0
+								4560 30 0 0 0
+								4565 22 1 0 0>;
+				strategy_temp_normal_high =	<4560 60 0 0 0
+								4560 50 0 0 0
+								4560 40 0 0 0
+								4565 30 1 0 0>;
+				strategy_temp_warm =		<4130 20 1 0 0>;
+			};
+
+			strategy_soc_75_to_85 {
+				strategy_temp_little_cold =	<4570 20 1 0 0>;
+				strategy_temp_cool =		<4570 20 1 0 0>;
+				strategy_temp_little_cool =	<4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_little_cool_high = <4560 30 0 0 0
+								4570 20 1 0 0>;
+				strategy_temp_normal_low =	<4560 30 0 0 0
+								4565 22 1 0 0>;
+				strategy_temp_normal_high =	<4560 40 0 0 0
+								4565 30 1 0 0>;
+				strategy_temp_warm =		<4130 20 1 0 0>;
+			};
+
+			strategy_soc_85_to_90 {
+				strategy_temp_little_cold =	<4570 20 1 0 0>;
+				strategy_temp_cool =		<4570 20 1 0 0>;
+				strategy_temp_little_cool =	<4570 20 1 0 0>;
+				strategy_temp_little_cool_high = <4570 20 1 0 0>;
+				strategy_temp_normal_low =	<4565 22 1 0 0>;
+				strategy_temp_normal_high =	<4565 30 1 0 0>;
+				strategy_temp_warm =		<4130 20 1 0 0>;
+			};
+		};
+		oplus_sc8547_cp: oplus,sc8547_cp {
+			oplus,ic_type = <OPLUS_CHG_IC_CP>;
+			oplus,ic_index = <0>;
+			oplus,ic_func_group = <&sc8547_cp_groups>;
+		};
+	};
+};
+
+&i2c13 {
+	status = "okay";
+	clock-frequency = <400000>;
+	oplus_sc8547_slave: sc8547-charger-slave@6F{
+		status = "okay";
+		compatible = "slave_vphy_sc8547";
+		reg = <0x6F>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c13_mode_default>;
+
+		ocp_reg = <0xd>;
+		ovp_reg = <0x36>;/* vbat ovp 4.85v */
+		vbus_ovp_reg = /bits/ 8 <0x5A>;  /* vbus ovp: 10.5v */
+		vooc_vbus_ovp_reg = /bits/ 8 <0x64>;  /* vbus ovp: 11v */
+		oplus_sc8547_slave_cp: oplus,sc8547_slave_cp {
+			oplus,ic_type = <OPLUS_CHG_IC_CP>;
+			oplus,ic_index = <1>;
+			oplus,ic_func_group = <&sc8547_cp_groups>;
+		};
+	};
+};
+
+&pio {
+	i2c13_mode_default: i2c13_mode_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO163__FUNC_SCL13>,
+				<PINMUX_GPIO164__FUNC_SDA13>;
+			bias-pull-up = <MTK_PULL_SET_RSEL_111>;
+		};
+	};
+};
+
+/* for pd common charger */
+&ssusb {
+		usb-psy-name = "mtk-master-charger";
+		typec-name = "rt-pd-manager";
+		typec-port-name = "port0";
+};
+
+&i2c5 {
+		mediatek,fifo-use-polling;
+		mediatek,request-cpu-qos;
+};
+
+&soc {
+	oplus_chg_plc: oplus,plc_charge {
+		compatible = "oplus,plc_charge";
+		oplus,plc_soc = <90>;
+
+		oplus,plc_strategy-data = <&buck_simple_strategy>;
+		oplus,plc_strategy-names = "default";
+
+		oplus_ufcs_step_strategy: oplus_ufcs_step_strategy {
+			oplus,strategy_type = <PLC_STRATEGY_STEP>;
+		};
+
+		cp_2t1_simple_strategy: cp_2t1_simple_strategy {
+			oplus,strategy_type = <PLC_STRATEGY_SIMPLE>;
+			oplus,strategy_data {
+				strategy_curr_ma = <1000 1500>;
+			};
+		};
+
+		cp_1t1_simple_strategy: cp_1t1_simple_strategy {
+			oplus,strategy_type = <PLC_STRATEGY_SIMPLE>;
+			oplus,strategy_data {
+				strategy_curr_ma = <2000 3000>;
+			};
+		};
+
+		buck_simple_strategy: buck_simple_strategy {
+			oplus,strategy_type = <PLC_STRATEGY_SIMPLE>;
+		};
+	};
+};
+
+#include "oplus-chg-24891-pps.dtsi"

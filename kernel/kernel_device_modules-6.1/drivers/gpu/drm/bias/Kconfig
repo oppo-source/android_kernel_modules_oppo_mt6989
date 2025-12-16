@@ -1,0 +1,4 @@
+config DRM_BIAS_AW37501
+    tristate "LCD Bias aw37501"
+    help
+      LCD Bias aw37501 for lcd driver nt36672c

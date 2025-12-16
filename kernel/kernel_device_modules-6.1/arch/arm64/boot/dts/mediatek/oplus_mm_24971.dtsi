@@ -1,0 +1,6 @@
+&mtkheap_page_svp {
+	/* 7 * display-size & align with 2Mib */
+	rsv-pool-size = <154>;
+	/* 22344 * 1024 = 22880256 */
+	display-size = <22401024>;
+};

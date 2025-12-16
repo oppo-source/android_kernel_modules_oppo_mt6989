@@ -1,0 +1,65 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2021 MediaTek Inc.
+ */
+
+//&pio {
+//	aw37004dnr_default: state_default_a {
+//		pins_cmd_dat {
+//			pinmux = <PINMUX_GPIO121__FUNC_GPIO121>;
+//		};
+//	};
+//	// pull up to enable dvdd supply
+//	aw37004dnr_reset_high: state_reset_high_a {
+//		pins_cmd_dat {
+//			pinmux = <PINMUX_GPIO121__FUNC_GPIO121>,
+//			<PINMUX_GPIO83__FUNC_GPIO83>;  //CAMERA_DVDD_VIN_EN
+//			slew-rate = <1>;
+//			output-high;
+//		};
+//	};
+//	aw37004dnr_reset_low: state_reset_low_a {
+//		pins_cmd_dat {
+//			pinmux = <PINMUX_GPIO121__FUNC_GPIO121>;
+//			slew-rate = <1>;
+//			output-low;
+//		};
+//	};
+//};
+
+&i2c10 {
+	clock-frequency = <400000>;
+	aw37004dnr@28 {
+		compatible = "aw37004dnr-pmic";
+		reg = <0x28>;
+//		pinctrl-names = "default", "reset_high", "reset_low";
+//		pinctrl-0 = <&aw37004dnr_default>;
+//		pinctrl-1 = <&aw37004dnr_reset_high>;
+//		pinctrl-2 = <&aw37004dnr_reset_low>;
+		regulators {
+			aw37004dnr_dvdd1:ONLDO1 {
+				regulator-name = "aw37004dnr_dvdd1";
+				regulator-min-microvolt = <600000>;
+				regulator-max-microvolt = <1800000>;
+			};
+			aw37004dnr_dvdd2:ONLDO2 {
+				regulator-name = "aw37004dnr_dvdd2";
+				regulator-min-microvolt = <600000>;
+				regulator-max-microvolt = <1800000>;
+			};
+			aw37004dnr_avdd1:ONLDO3 {
+				regulator-name = "aw37004dnr_avdd1";
+				regulator-min-microvolt = <1200000>;
+				regulator-max-microvolt = <4300000>;
+			};
+			aw37004dnr_avdd2:ONLDO4 {
+				regulator-name = "aw37004dnr_avdd2";
+				regulator-min-microvolt = <1200000>;
+				regulator-max-microvolt = <4300000>;
+			};
+		};
+	};
+};
+
+
+

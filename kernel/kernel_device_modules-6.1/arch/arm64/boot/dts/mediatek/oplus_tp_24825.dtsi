@@ -1,0 +1,385 @@
+&spi6 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	goodix@0{
+		status = "disabled";
+	};
+
+	touchscreen@0{
+		compatible = "focaltech-FT3683g", "synaptics,tcm-spi-hbp";
+		spi-max-frequency = <19000000>;
+		reg = <0x0>;
+		chip-num = <4>;
+		chip-name = "S3910", "FT3683G","FT3683G", "S3910";
+		status = "okay";
+		interrupt-parent = <&pio>;
+		irq-gpio = <&pio 6 0x2002>;
+		reset-gpio = <&pio 3 0x1>;
+		vdd_2v8-supply  = <&mt6373_vtp>;
+		vdd_2v8_volt = <3000000>;
+
+		vcc_1v8-supply  = <&mt6363_vio18>;
+		vcc_1v8_volt = <1800000>;
+
+		pinctrl-names = "default",  "sleep";
+		pinctrl-0 = <&oplus_tp_int_active &oplus_tp_reset_active &oplus_tp_spi_default>;
+		pinctrl-1 = <&oplus_tp_suspend &oplus_tp_spi_suspend>;
+
+		project_id = <24825>;
+		touchpanel,max-num-support = <10>;
+		touchpanel,tx-rx-num = <18 40>;
+		earsense,tx-rx-num = <17 18>;
+		touchpanel,panel-coords = <17280 38272>;
+		touchpanel,display-coords = <1080 2392>;
+		touchpanel,touchmajor-limit = <128 216>;
+		touchpanel,smooth-level = <0 110 115 120 140 155>;
+		touchpanel,smooth-level-charging = <0 110 115 120 140 155>;
+		touchpanel,sensitive-level = <0 19 16 12 11 10>;
+		touchpanel,tp-index = <0>;
+		touchpanel,high-frame-rate-time = <60>;
+		touchpanel,single-optimized-time = <8>;
+
+		vid_len = <2>;
+		firmware_name = "AA600", "AA600", "AA600", "AA600";
+		panel_type = <7 7 3 3>;
+		platform_support_project = <24825 24825 24825>;
+		platform_support_project_dir = <24825 24825 24825>;
+		platform_support_project_commandline = "aa600_p_7_a0025_vdo_panel-synaptics-s3910", "aa600_p_7_a0025_vdo_panel-focaltech-FT3683g", "aa600_p_3_a0025_vdo_panel-focaltech-FT3683g", "aa600_p_3_a0025_vdo_panel-synaptics-s3910";
+
+		/* SW Support Feature Control */
+		health_monitor_v2_support;
+		disable_suspend_irq_handler_support;
+		black_gesture_support;
+		charger_pump_support;
+		fw_update_app_support;
+		smart_gesture_support;
+		game_switch_support;
+		report_flow_unlock_support;
+		kernel_grip_support;
+		fingerprint_underscreen_support;
+		pressure_report_support;
+		auto_test_force_pass_support;
+		snr_read_support;
+		//high_resolution_support;
+		screenoff_fingerprint_info_support;
+		irq_need_dev_resume_ok;
+		sportify_aod_gesture_support;
+		black_gesture_indep_support;
+		thermal_detect_support;
+		exception_upload_support;
+		tp_data_record_support;
+		palm_to_sleep_support;
+		diaphragm_touch_support;
+		report_rate_white_list_support;
+		esd_handle_support;
+		health_monitor_support;
+		disable_touch_event_support;
+		temperature_detect_shellback_support;
+		stats_upload_support;
+		/*
+		*Virtual Key Config:
+		*1:touchpanel,button-type: <virtualkey_type  supportted_button-map>
+		*virtualkey_type:
+		*Type 1: using board_properties
+		*Type 2: using same IC (button zone&& touch zone are seprate)
+		*Type 3: using diffrent IC (button zone&& touch zone are seprate)
+		*Type 4: No need of virtual key process
+		*supportted_button-map:select|menu|home|back
+		*
+		*2:touchpanel,button-map
+		*type (X1,Y1)(X2,Y2)(X3,Y3)(Width_X,Hight_Y)--Only when button-type is 0
+		*/
+		touchpanel,button-type = <4>;
+		touchpanel.button-TRx = <0 0>;
+
+		/*
+		for hbp3.0
+		*/
+
+		avdd-supply = <&mt6373_vtp>;
+		synaptics,avdd-name = "avdd";
+		synaptics,vdd_2v8_volt = <3000000>;
+		vdd-supply  = <&mt6363_vio18>;
+		synaptics,vdd-name = "vdd";
+
+		/* Other HW Resource */
+
+		synaptics,irq-gpio = <&pio 6 0x2008>;
+		synaptics,reset-gpio = <&pio 3 0x1>;
+		//cs-gpio = <&pio 110 0x00>;
+
+		synaptics,power-on-state = <1>;
+		synaptics,power-delay-ms = <200>;
+		synaptics,irq-on-state = <0>;
+		synaptics,reset-on-state = <0>;
+		synaptics,reset-active-ms = <10>;
+		synaptics,reset-delay-ms = <80>;
+		synaptics,spi-mode = <0>;
+		synaptics,spi-byte-delay-us = <0>;
+		synaptics,spi-block-delay-us = <0>;
+
+		fingerprint_not_report_in_suspend;
+
+		FT3683G{
+			switch_report_rate;
+			extreme_game_report_rate = <180>;//180Hz
+		};
+
+		FT3683G_PANEL3{
+			interrupts = <6 0x2002>;
+			irq-gpio = <&pio 6 0x2002>;
+			reset-gpio = <&pio 3 0x1>;
+			touchpanel,max-num-support = <10>;
+			touchpanel,tx-rx-num = <18 40>;
+			earsense,tx-rx-num = <17 18>;
+			touchpanel,panel-coords = <17280 38272>;
+			touchpanel,display-coords = <1080 2392>;
+			touchpanel,touchmajor-limit = <128 216>;
+			touchpanel,smooth-level = <0 110 115 120 140 155>;
+			touchpanel,smooth-level-charging = <0 110 115 120 140 155>;
+			touchpanel,sensitive-level = <0 19 16 12 11 10>;
+			touchpanel,tp-index = <0>;
+			touchpanel,high-frame-rate-time = <60>;
+			touchpanel,single-optimized-time = <8>;
+
+			prevention,curved_screen_V2;
+			prevention,grip_disable_level = <6>;
+			prevention,updelay_time_ms = <30>;
+			prevention,makeup_cnt_weight = <4 1 2 2 2>;
+			prevention,large_corner_range = <1920 4800>;
+			prevention,large_corner_judge_condition = <500 300 1600 6 6>;
+			prevention,trx_reject_condition = <8 7 7>;
+			prevention,trx_strict_reject_condition = <7 6 6>;
+			prevention,large_judge_time_ms = <500 50 30>;
+			prevention,large_exit_condition = <15 12 2>;
+			prevention,single_channel_width = <256 256>;
+			prevention,normal_tap_condition = <10 300>;
+			prevention,long_edge_condition = <230 100 180 80>;
+			prevention,long_strict_edge_condition = <170 80>;
+			prevention,long_fingerhold_condition = <50 6 4 4>;
+			prevention,short_edge_condition = <230 100 180 80>;
+			prevention,short_strict_edge_condition = <160 60>;
+			prevention,large_strict_exit_condition = <5 5>;
+			prevention,top_corner_config = <800 2400 720>;
+			prevention,edge_swipe_config = <480 1600>;
+
+			prevention,curved_screen_V4;
+			prevention,long_eliminate_point_type = <2 17280 13280 420 38592 300 1>;
+			prevention,long_fingerhold_condition2 = <1120 3200 0 0>;
+			prevention,top_corner_config2 =<3 80 420 2400 0>;
+			prevention,hor_long_top_corner_config =<480 3200 0 0>;
+			prevention,top_middle_config =<17280 1600 1600 0>;
+			prevention,corner_eliminate_point_type =<0 1920 3200 1>;
+			prevention,finger_hold_differ_size = <1 0 720 300>;
+			prevention,finger_hold_max_rx_exit_distance = <5 700 3400>;
+			prevention,max_rx_exit_distance = <1 5 18 700 2800>;
+			prevention,dynamic_finger_hold_exit_distance = <1 580 3400 780>;
+			prevention,edge_sliding_matched_support = <1 250 3 0>;
+
+			//grip v4.2 reclining mode
+			prevention,reclining_mode_support = <1>;
+			prevention,long_eliminate_point_type_recli = <2 17280 13280 420 38592 200 1>;
+			prevention,finger_hold_differ_size_recli = <1 0 720 300>;
+			prevention,finger_hold_max_rx_exit_distance_recli = <5 700 3400>;
+			prevention,max_rx_exit_distance_recli = <1 5 90 700 2800>;
+			prevention,dynamic_finger_hold_exit_distance_recli = <1 580 3400 780>;
+			prevention,edge_sliding_matched_support_recli = <1 200 3 0>;
+			prevention,long_edge_condition_recli = <120 100 150 100>;
+		};
+
+		FT3683G_PANEL7{
+			interrupts = <6 0x2002>;
+			irq-gpio = <&pio 6 0x2002>;
+			reset-gpio = <&pio 3 0x1>;
+			touchpanel,max-num-support = <10>;
+			touchpanel,tx-rx-num = <18 40>;
+			earsense,tx-rx-num = <17 18>;
+			touchpanel,panel-coords = <17280 38272>;
+			touchpanel,display-coords = <1080 2392>;
+			touchpanel,touchmajor-limit = <128 216>;
+			touchpanel,smooth-level = <0 110 115 120 140 155>;
+			touchpanel,smooth-level-charging = <0 110 115 120 140 155>;
+			touchpanel,sensitive-level = <0 19 16 12 11 10>;
+			touchpanel,tp-index = <0>;
+			touchpanel,high-frame-rate-time = <60>;
+			touchpanel,single-optimized-time = <8>;
+
+			prevention,curved_screen_V2;
+			prevention,grip_disable_level = <6>;
+			prevention,updelay_time_ms = <30>;
+			prevention,makeup_cnt_weight = <4 1 2 2 2>;
+			prevention,large_corner_range = <1920 4800>;
+			prevention,large_corner_judge_condition = <500 300 1600 6 6>;
+			prevention,trx_reject_condition = <8 7 7>;
+			prevention,trx_strict_reject_condition = <7 6 6>;
+			prevention,large_judge_time_ms = <500 50 30>;
+			prevention,large_exit_condition = <15 12 2>;
+			prevention,single_channel_width = <256 256>;
+			prevention,normal_tap_condition = <10 300>;
+			prevention,long_edge_condition = <230 100 180 80>;
+			prevention,long_strict_edge_condition = <170 80>;
+			prevention,long_fingerhold_condition = <50 6 4 4>;
+			prevention,short_edge_condition = <230 100 180 80>;
+			prevention,short_strict_edge_condition = <160 60>;
+			prevention,large_strict_exit_condition = <5 5>;
+			prevention,top_corner_config = <800 2400 720>;
+			prevention,edge_swipe_config = <480 1600>;
+
+			prevention,curved_screen_V4;
+			prevention,long_eliminate_point_type = <2 17280 13280 420 38592 300 1>;
+			prevention,long_fingerhold_condition2 = <1120 3200 0 0>;
+			prevention,top_corner_config2 =<3 80 420 2400 0>;
+			prevention,hor_long_top_corner_config =<480 3200 0 0>;
+			prevention,top_middle_config =<17280 1600 1600 0>;
+			prevention,corner_eliminate_point_type =<0 1920 3200 1>;
+			prevention,finger_hold_differ_size = <1 0 720 300>;
+			prevention,finger_hold_max_rx_exit_distance = <5 700 3400>;
+			prevention,max_rx_exit_distance = <1 5 18 700 2800>;
+			prevention,dynamic_finger_hold_exit_distance = <1 580 3400 780>;
+			prevention,edge_sliding_matched_support = <1 250 3 0>;
+
+			//grip v4.2 reclining mode
+			prevention,reclining_mode_support = <1>;
+			prevention,long_eliminate_point_type_recli = <2 17280 13280 420 38592 200 1>;
+			prevention,finger_hold_differ_size_recli = <1 0 720 300>;
+			prevention,finger_hold_max_rx_exit_distance_recli = <5 700 3400>;
+			prevention,max_rx_exit_distance_recli = <1 5 90 700 2800>;
+			prevention,dynamic_finger_hold_exit_distance_recli = <1 580 3400 780>;
+			prevention,edge_sliding_matched_support_recli = <1 200 3 0>;
+			prevention,long_edge_condition_recli = <120 100 150 100>;
+		};
+	
+	};
+};
+
+&pio {
+	oplus_tp_spi_default: tp_spi_default {
+		pins_cmd_dat {
+		pinmux = <PINMUX_GPIO231__FUNC_SPI6_B_CLK>,
+				<PINMUX_GPIO232__FUNC_SPI6_B_CSB>,
+				<PINMUX_GPIO233__FUNC_SPI6_B_MO>,
+				<PINMUX_GPIO234__FUNC_SPI6_B_MI>;
+			bias-disable;
+			drive-strength = <4>;
+		};
+	};
+	oplus_tp_int_active: tp_int_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO6__FUNC_GPIO6>;
+			input-enable;
+		};
+	};
+	oplus_tp_reset_active: tp_reset_active {
+		pins_cmd_data {
+			pinmux = <PINMUX_GPIO3__FUNC_GPIO3>;
+			output-high;
+		};
+	};
+	oplus_tp_suspend: tp_suspend {
+		pins_cmd_data {
+			pinmux = <PINMUX_GPIO3__FUNC_GPIO3>,
+					<PINMUX_GPIO6__FUNC_GPIO6>;
+			output-low;
+		};
+	};
+	oplus_tp_spi_suspend: tp_spi_suspend {
+		pins_cmd_data {
+			pinmux = <PINMUX_GPIO231__FUNC_GPIO231>,
+					<PINMUX_GPIO232__FUNC_GPIO232>,
+					<PINMUX_GPIO233__FUNC_GPIO233>,
+					<PINMUX_GPIO234__FUNC_GPIO234>;
+			bias-disable;
+			output-low;
+		};
+	};
+};
+
+&keypad {
+        keypad,volume-down = <&pio 11 0x00>;
+        pinctrl-names = "volume_down_as_int";
+        pinctrl-0 = <&volume_down_gpio_eint>;
+        status = "okay";
+};
+
+&pio {
+        volume_down_gpio_eint:volume_down@0{
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO11__FUNC_GPIO11>;
+                        slew-rate = <0>;  /*direction 0:in, 1:out*/
+                        input-enable;
+                        bias-disable;
+                };
+        };
+};
+
+&odm {
+        kpd_volume_down:kpd_volume_down {
+                compatible = "mediatek, VOLUME_DOWN-eint";
+                interrupt-parent = <&pio>;
+                interrupts = <11 IRQ_TYPE_EDGE_FALLING 11 0>;
+                debounce = <32000>;
+                status = "okay";
+        };
+};
+
+&odm {
+	devinfo {
+		status = "disabled";
+	};
+
+	devinfo_oplus {
+		compatible = "oplus-devinfo";
+
+		pinctrl-names = "default", "aboard_gpio0_sleep", "aboard_gpio0_active", "aboard_gpio0_idle";
+		pinctrl-0 = <&hw_pins_default>;
+		pinctrl-1 = <&aboard_pin_gpio0_sleep>;
+		pinctrl-2 = <&aboard_pin_gpio0_active>;
+		pinctrl-3 = <&aboard_pin_gpio0_idle>;
+
+		main-sub {
+			compatible = "hw-match, main-sub";
+			use_tristate_gpio;
+			aboard-gpio0 = <&pio 126 0>;
+			aboard-patterns = <0>;	/*0[high-resistance] 1[pull-down] 2[pull-up]*/
+			/*main board*/
+			match-projects = <24825>;
+		};
+	};
+};
+
+
+&pio{
+	hw_pins_default:default@hw_sub_id {
+	};
+
+	aboard_pin_gpio0_sleep:sleep@id0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO126__FUNC_GPIO126>;
+			slew-rate = <0>;
+			bias-pull-down = <MTK_PULL_SET_RSEL_000>;
+			input-enable;
+		};
+	};
+
+	aboard_pin_gpio0_active:active@id0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO126__FUNC_GPIO126>;
+			slew-rate = <0>;
+			bias-pull-up = <MTK_PULL_SET_RSEL_000>;
+			input-enable;
+		};
+	};
+
+	aboard_pin_gpio0_idle:idle@id0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO126__FUNC_GPIO126>;
+			slew-rate = <0>;
+			bias-disable;
+			input-enable;
+		};
+	};
+};
+
+

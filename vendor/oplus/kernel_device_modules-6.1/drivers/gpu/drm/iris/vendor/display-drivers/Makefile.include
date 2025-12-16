@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: GPL-2.0-only WITH Linux-syscall-note
+
+$(warning The vendor module of pixelworks iris will be added to the kernel)
+
+PWAROOT=../iris/vendor/display-drivers
+
+ccflags-y += -DCONFIG_PXLW_IRIS
+
+ccflags-y += -I$(PWAROOT)/common/  \
+		-I$(PWAROOT)/iris7p/
+
+mediatek-drm-y += $(PWAROOT)/common/dsi_iris_lightup.o \
+		  $(PWAROOT)/common/dsi_iris_lightup_ocp.o \
+		  $(PWAROOT)/common/dsi_iris_lp.o \
+		  $(PWAROOT)/common/dsi_iris_memc.o \
+		  $(PWAROOT)/common/dsi_iris_timing_switch.o \
+		  $(PWAROOT)/common/dsi_iris_dbg.o \
+		  $(PWAROOT)/common/dsi_iris_dual.o \
+		  $(PWAROOT)/common/dsi_iris_mtk.o \
+		  $(PWAROOT)/common/dsi_iris_cmpt.o \
+		  $(PWAROOT)/common/dsi_iris_boost.o
+
+
+mediatek-drm-y += $(PWAROOT)/iris7p/dsi_iris_lightup.o

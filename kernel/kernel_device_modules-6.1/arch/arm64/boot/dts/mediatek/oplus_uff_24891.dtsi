@@ -1,0 +1,92 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+* Copyright (C) 2021-2025 Oplus. All rights reserved.
+*/
+
+/* UFF dts config at 2023.5.19
+ *
+ * fp vendor:
+ *   jiiov: JV0307(start from bringup)
+ *   jiiov: silead GSL7003(late than JV0307)
+ */
+
+/* FINGERPRINT start */
+&spi1 {
+#address-cells = <1>;
+#size-cells = <0>;
+status = "okay";
+oplus_fp: fingerprint@0 {
+		compatible = "oplus,fp_spi";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		spi-id = <1>; // had better confirm with HW developer
+		spi-reg = <11011000>;
+		uff,gpio_reset = <&pio 134 0x00>;
+		uff,gpio_cs = <&pio 51 0x00>;
+		pinctrl-names = "default", "fp_spi_driver", "fp_cs_func";
+		pinctrl-0 = <&gpio_uff_reset_default>, <&gpio_uff_cs_default>;
+		pinctrl-1 = <&gpio_uff_clk_6mA>, <&gpio_uff_mosi_6mA>, <&gpio_uff_miso_6mA>, <&gpio_uff_cs_6mA>;
+		pinctrl-2 = <&gpio_uff_cs_func>;
+		dvdd-supply = <&mt6368_vmch>; // fp share power with infrared remote control module!!!
+		dvdd-config = <3000000 3000000 150000>;
+			optical_irq_disable_flag = <1>;
+
+		power-num = <1>;
+		status = "okay";
+		power_source_1 { // only one power source for this project
+			power-mode = <1>; // 0: power mode not set, 1: ldo power, 2: gpio power, 3: auto power
+			power-name = "dvdd";
+			power-config = "dvdd-config";
+			delay-time = <0>;
+		};
+	};
+};
+
+&pio{
+gpio_uff_reset_default: gpio_uff_reset_default {
+				pins_cmd_dat {
+					pinmux = <PINMUX_GPIO134__FUNC_GPIO134>;
+					slew-rate = <1>;
+					output-low;
+				};
+			};
+gpio_uff_cs_default: gpio_uff_cs_default {
+				pins_cmd_dat {
+					pinmux = <PINMUX_GPIO51__FUNC_GPIO51>;
+					slew-rate = <1>;
+					bias-disable;
+					output-low;
+				};
+			};
+gpio_uff_clk_6mA: gpio_uff_clk_6mA {
+				pins_cmd_dat {
+					pinmux = <PINMUX_GPIO50__FUNC_SPI1_CLK>;
+					drive-strength = <2>;
+				};
+			};
+gpio_uff_mosi_6mA: gpio_uff_mosi_6mA {
+				pins_cmd_dat {
+					pinmux = <PINMUX_GPIO53__FUNC_SPI1_MO>;
+					drive-strength = <1>;
+				};
+			};
+gpio_uff_miso_6mA: gpio_uff_miso_6mA {
+				pins_cmd_dat {
+					pinmux = <PINMUX_GPIO52__FUNC_SPI1_MI>;
+					drive-strength = <1>;
+				};
+			};
+gpio_uff_cs_6mA: gpio_uff_cs_6mA {
+				pins_cmd_dat {
+					pinmux = <PINMUX_GPIO51__FUNC_SPI1_CSB>;
+					drive-strength = <1>;
+				};
+			};
+gpio_uff_cs_func: gpio_uff_cs_func {
+					pins_cmd_dat {
+					pinmux = <PINMUX_GPIO51__FUNC_SPI1_CSB>;
+					drive-strength = <1>;
+				};
+			};
+};
+/* FINGERPRINT end */

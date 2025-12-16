@@ -1,0 +1,1036 @@
+@@ init
+
+20 fd 00
+20 20 0e
+sl 3 3 ; sleep time
+20 20 0b
+20 fd 00
+20 10 05
+20 11 2a
+20 12 03
+20 13 05
+20 14 43
+20 15 02
+20 16 82
+20 17 05
+20 18 78
+20 19 04
+20 1a 05
+20 1b f0
+20 1c 09
+20 1d 13
+20 1e 23
+20 1f 0f
+20 20 0f
+20 21 00
+
+20 fd 01
+20 1a 14
+20 1b 10
+20 2a 03
+20 2b 34
+
+20 fd 01
+20 12 00
+20 03 12
+20 04 50
+20 05 00
+20 06 00
+20 07 05
+20 21 02
+20 24 30
+20 31 00
+20 33 03
+20 01 03
+20 19 10
+20 42 5d
+20 43 00
+20 47 07
+20 48 08
+20 4c 38
+20 b2 7e
+20 b3 78
+20 bd 08
+20 d2 47
+20 d3 10
+20 d4 0d
+20 d5 08
+20 d6 07
+
+20 b1 00
+20 b4 00
+20 b5 01
+20 b6 01
+20 b7 01
+20 bc 44
+20 bf 42
+20 c1 10
+20 c3 24
+20 c8 03
+20 c6 f0
+20 c7 20
+20 c9 c8
+20 e1 33
+20 e2 bb
+
+20 51 0c
+20 52 0a
+20 57 8c
+20 59 09
+20 5a 08
+20 5e 10
+20 60 02
+20 6d 5c
+20 76 16
+20 7c 11
+20 90 28
+20 91 16
+20 92 1c
+20 93 24
+20 95 48
+20 9c 06
+20 ca 0c
+20 ce 0d
+
+20 fd 01
+20 c0 00
+20 dd 18
+20 de 19
+20 df 32
+20 e0 70
+
+20 fd 01
+20 c2 05
+20 d7 88
+20 d8 77
+20 d9 66
+
+20 fd 07
+20 00 f8
+20 01 2b
+20 05 40
+20 08 06
+20 09 11
+20 28 6f
+20 2a 20
+20 2b 05
+20 2c 00
+20 50 04
+20 51 07
+20 5e 10
+20 52 00
+20 53 80
+20 54 00
+20 55 80
+20 56 00
+20 57 80
+20 58 00
+20 59 80
+20 5c 3f
+
+20 fd 02
+20 9a f0
+20 a8 02
+
+20 fd 02
+20 a9 09
+20 aa a0
+20 ab 0c
+20 ac d0
+
+20 a0 00
+20 a1 08
+20 a2 09
+20 a3 90
+20 a4 00
+20 a5 08
+20 a6 0c
+20 a7 c0
+
+20 fd 05
+20 04 40
+20 06 00
+20 07 00
+20 0D 01
+20 0F 01
+20 10 00
+20 11 00
+20 12 0C
+20 13 CF
+20 14 00
+20 15 00
+20 18 00
+20 19 00
+20 fd 00
+20 24 01
+20 c0 16
+20 c1 08
+20 c2 30
+20 8e 0c
+20 8f c0
+20 90 09
+20 91 90
+20 93 14
+20 94 cc
+20 95 ba
+20 96 16
+20 98 ee
+20 9c 32
+20 b7 02
+
+
+
+20 fd 00
+20 20 0f
+20 e7 03
+20 e7 00
+20 fd 01
+
+
+@@OV08D_MIPI_3264x2448_2lane_1440M_30fps_V2.1
+;improved small signal linearity and Hbanding
+100 99 3264 2448
+
+;Tline = 12.77777778 us
+
+;Mipibitrate 1440Mbps/lane  2lane
+;fps 30.008
+;pclk = 36M(35999997)
+;dt= 0x2b 10bit
+;hts 0x1cc
+;vts 0xA30  vts = 2504 + P1:[0x05:0x06](hex2dec)/2 ;The VTS must be integer multiples of 4
+;Max Exp VTS-20
+;Min Exp 4 line
+;Suggest maxinum exposure time is 1 second if you want to achieve greater exposure time
+;analog gain 15.5x
+;digital gain (1x-32x)
+;OB 0x40
+
+20 fd 00
+20 20 0e
+sl 3 3
+20 20 0b
+20 fd 00
+20 10 05
+20 11 2a
+20 12 03
+20 13 05
+20 14 43
+20 15 02
+20 16 82
+20 17 05
+20 18 78
+20 19 04
+20 1a 05
+20 1b f0
+20 1c 09
+20 1d 13
+20 1e 23
+20 1f 0f
+20 20 0f
+20 21 00
+
+20 fd 01
+20 1a 14
+20 1b 10
+20 2a 03
+20 2b 34
+
+20 fd 01
+20 12 00
+20 03 12
+20 04 50
+20 05 00
+20 06 d0;00 miles
+20 07 05
+20 21 02
+20 24 30
+20 31 00
+20 33 03
+20 01 03
+20 19 10
+20 42 5d
+20 43 00
+20 47 07
+20 48 08
+20 4c 38
+20 b2 7e
+20 b3 78
+20 bd 08
+20 d2 47
+20 d3 10
+20 d4 0d
+20 d5 08
+20 d6 07
+
+20 b1 00
+20 b4 00
+20 b5 01
+20 b6 01
+20 b7 01
+20 bc 44
+20 bf 42
+20 c1 10
+20 c3 24
+20 c8 03
+20 c6 f0
+20 c7 20
+20 c9 c8
+20 e1 33
+20 e2 bb
+
+20 51 0c
+20 52 0a
+20 57 8c
+20 59 09
+20 5a 08
+20 5e 10
+20 60 02
+20 6d 5c
+20 76 16
+20 7c 11
+20 90 28
+20 91 16
+20 92 1c
+20 93 24
+20 95 48
+20 9c 06
+20 ca 0c
+20 ce 0d
+
+20 fd 01
+20 c0 00
+20 dd 18
+20 de 19
+20 df 32
+20 e0 70
+
+20 fd 01
+20 c2 05
+20 d7 88
+20 d8 77
+20 d9 66
+
+20 fd 07
+20 00 f8
+20 01 2b
+20 05 40
+20 08 06
+20 09 11
+20 28 6f
+20 2a 20
+20 2b 05
+20 2c 00
+20 50 04
+20 51 07
+20 5e 10
+20 52 00
+20 53 80
+20 54 00
+20 55 80
+20 56 00
+20 57 80
+20 58 00
+20 59 80
+20 5c 3f
+
+20 fd 02
+20 9a f0
+20 a8 02
+
+20 fd 02
+20 a9 09
+20 aa a0
+20 ab 0c
+20 ac d0
+
+20 a0 00
+20 a1 08
+20 a2 09
+20 a3 90
+20 a4 00
+20 a5 08
+20 a6 0c
+20 a7 c0
+
+20 fd 05
+20 04 40
+20 06 00
+20 07 00
+20 0D 01
+20 0F 01
+20 10 00
+20 11 00
+20 12 0C
+20 13 CF
+20 14 00
+20 15 00
+20 18 00
+20 19 00
+
+
+
+
+20 fd 00
+20 24 01
+20 c0 16
+20 c1 08
+20 c2 30
+20 8e 0c
+20 8f c0
+20 90 09
+20 91 90
+20 93 14
+20 94 cc
+20 95 ba
+20 96 16
+20 98 ee
+20 9c 32
+20 b7 02
+
+
+
+20 fd 00
+20 20 0f
+20 e7 03
+20 e7 00
+20 fd 01
+
+@@OV08D_MIPI_3264x2448_2lane_1440M_24fps_V2.1
+;improved small signal linearity and Hbanding
+100 99 3264 2448
+
+;Tline = 12.77777778 us
+;Mipibitrate 1440Mbps/lane  2lane
+;fps 24.15
+;pclk = 36M(35999997)
+;dt= 0x2b 10bit
+;hts 0x1cc
+;vts 0xCA8  vts = 2504 + P1:[0x05:0x06](hex2dec)/2 ;The VTS must be integer multiples of 4
+;Max Exp VTS-20
+;Min Exp 4 line
+;Suggest maxinum exposure time is 1 second if you want to achieve greater exposure time
+;analog gain 15.5x
+;digital gain (1x-32x)
+;OB 0x40
+
+
+
+20 fd 00
+20 20 0e
+sl 3 3
+20 20 0b
+20 fd 00
+20 10 05
+20 11 2a
+20 12 03
+20 13 05
+20 14 43
+20 15 02
+20 16 82
+20 17 05
+20 18 78
+20 19 04
+20 1a 05
+20 1b f0
+20 1c 09
+20 1d 13
+20 1e 23
+20 1f 0f
+20 20 0f
+20 21 00
+
+20 fd 01
+20 1a 14
+20 1b 10
+20 2a 03
+20 2b 34
+
+20 fd 01
+20 12 00
+20 03 08
+20 04 50
+20 05 05
+20 06 c0
+20 07 05
+20 21 02
+20 24 80
+20 31 00
+20 33 03
+20 01 03
+20 19 10
+20 42 5d
+20 43 00
+20 47 07
+20 48 08
+20 4c 38
+20 b2 7e
+20 b3 78
+20 bd 08
+20 d2 47
+20 d3 10
+20 d4 0d
+20 d5 08
+20 d6 07
+
+20 b1 00
+20 b4 00
+20 b5 01
+20 b6 01
+20 b7 01
+20 bc 44
+20 bf 42
+20 c1 10
+20 c3 24
+20 c8 03
+20 c6 f0
+20 c7 20
+20 c9 c8
+20 e1 33
+20 e2 bb
+
+20 51 0c
+20 52 0a
+20 57 8c
+20 59 09
+20 5a 08
+20 5e 10
+20 60 02
+20 6d 5c
+20 76 16
+20 7c 11
+20 90 28
+20 91 16
+20 92 1c
+20 93 24
+20 95 48
+20 9c 06
+20 ca 0c
+20 ce 0d
+
+20 fd 01
+20 c0 00
+20 dd 18
+20 de 19
+20 df 32
+20 e0 70
+
+20 fd 01
+20 c2 05
+20 d7 88
+20 d8 77
+20 d9 66
+
+20 fd 07
+20 00 f8
+20 01 2b
+20 05 40
+20 08 06
+20 09 11
+20 28 6f
+20 2a 20
+20 2b 05
+20 2c 00
+20 50 04
+20 51 07
+20 5e 10
+20 52 00
+20 53 80
+20 54 00
+20 55 80
+20 56 00
+20 57 80
+20 58 00
+20 59 80
+20 5c 3f
+
+20 fd 02
+20 9a f0
+20 a8 02
+
+20 fd 02
+20 a9 09
+20 aa a0
+20 ab 0c
+20 ac d0
+
+20 a0 00
+20 a1 08
+20 a2 09
+20 a3 90
+20 a4 00
+20 a5 08
+20 a6 0c
+20 a7 c0
+
+20 fd 05
+20 04 40
+20 06 00
+20 07 00
+20 0D 01
+20 0F 01
+20 10 00
+20 11 00
+20 12 0C
+20 13 CF
+20 14 00
+20 15 00
+20 18 00
+20 19 00
+
+
+
+
+20 fd 00
+20 24 01
+20 c0 16
+20 c1 08
+20 c2 30
+20 8e 0c
+20 8f c0
+20 90 09
+20 91 90
+20 93 14
+20 94 cc
+20 95 ba
+20 96 16
+20 98 ee
+20 9c 32
+20 b7 02
+
+
+
+20 fd 00
+20 20 0f
+20 e7 03
+20 e7 00
+20 fd 01
+
+@@OV08D_MIPI_3264x1840_2lane_1440M_30fps_V2.1
+;improved small signal linearity and Hbanding
+100 99 3264 1840
+
+;Tline = 12.77777778 us
+;Mipibitrate 1440Mbps/lane  2lane
+;fps 30.008
+;pclk = 36M(35999997)
+;dt= 0x2b 10bit
+;hts 0x1cc
+;vts 0xA30  vts = 2504 + P1:[0x05:0x06](hex2dec)/2 ;The VTS must be integer multiples of 4
+;Max Exp VTS-20
+;Min Exp 4 line
+;Suggest maxinum exposure time is 1 second if you want to achieve greater exposure time
+;analog gain 15.5x
+;digital gain (1x-32x)
+;OB 0x40
+
+20 fd 00
+20 20 0e
+sl 3 3
+20 20 0b
+20 fd 00
+20 10 05
+20 11 2a
+20 12 03
+20 13 05
+20 14 43
+20 15 02
+20 16 82
+20 17 05
+20 18 78
+20 19 04
+20 1a 05
+20 1b f0
+20 1c 09
+20 1d 13
+20 1e 23
+20 1f 0f
+20 20 0f
+20 21 00
+
+20 fd 01
+20 1a 14
+20 1b 10
+20 2a 03
+20 2b 34
+
+20 fd 01
+20 12 00
+20 03 12
+20 04 50
+20 05 00
+20 06 d0;00 miles
+20 07 05
+20 21 02
+20 24 30
+20 31 00
+20 33 03
+20 01 03
+20 19 10
+20 42 5d
+20 43 00
+20 47 07
+20 48 08
+20 4c 38
+20 b2 7e
+20 b3 78
+20 bd 08
+20 d2 47
+20 d3 10
+20 d4 0d
+20 d5 08
+20 d6 07
+
+20 b1 00
+20 b4 00
+20 b5 01
+20 b6 01
+20 b7 01
+20 bc 44
+20 bf 42
+20 c1 10
+20 c3 24
+20 c8 03
+20 c6 f0
+20 c7 20
+20 c9 c8
+20 e1 33
+20 e2 bb
+
+20 51 0c
+20 52 0a
+20 57 8c
+20 59 09
+20 5a 08
+20 5e 10
+20 60 02
+20 6d 5c
+20 76 16
+20 7c 11
+20 90 28
+20 91 16
+20 92 1c
+20 93 24
+20 95 48
+20 9c 06
+20 ca 0c
+20 ce 0d
+
+20 fd 01
+20 c0 00
+20 dd 18
+20 de 19
+20 df 32
+20 e0 70
+
+20 fd 01
+20 c2 05
+20 d7 88
+20 d8 77
+20 d9 66
+
+20 fd 07
+20 00 f8
+20 01 2b
+20 05 40
+20 08 06
+20 09 11
+20 28 6f
+20 2a 20
+20 2b 05
+20 2c 00
+20 50 04
+20 51 07
+20 5e 10
+20 52 00
+20 53 80
+20 54 00
+20 55 80
+20 56 00
+20 57 80
+20 58 00
+20 59 80
+20 5c 3f
+
+20 fd 02
+20 9a f0
+20 a8 02
+
+20 fd 02
+20 a9 09
+20 aa a0
+20 ab 0c
+20 ac d0
+
+20 a0 01;dig crop
+20 a1 38;ystart 312
+20 a2 07
+20 a3 30;ysize 1840
+20 a4 00
+20 a5 08
+20 a6 0c;xsize 3264
+20 a7 c0
+
+20 fd 05
+20 04 03
+20 06 00
+20 07 00
+20 0D 01
+20 0F 01
+20 10 00
+20 11 00
+20 12 0c
+20 13 df
+20 14 00
+20 15 00
+20 18 00
+20 19 00
+
+
+
+
+20 fd 00
+20 24 01
+20 c0 16
+20 c1 08
+20 c2 30
+20 8e 0c
+20 8f c0
+20 90 07
+20 91 30
+20 93 14
+20 94 cc
+20 95 ba
+20 96 16
+20 98 ee
+20 9c 32
+20 b7 02
+
+
+
+20 fd 00
+20 20 0f
+20 e7 03
+20 e7 00
+20 fd 01
+
+@@OV08D_MIPI_1632x1224_2lane_720M_24fps_V2.0
+
+100 99 1632 1224
+102 80 1
+102 81 0
+
+;bg/br
+;Tline = 13.27777778 us
+;Mipibitrate 720Mbps/lane  2lane
+;fps 24.046
+;pclk = 36M(35999997)
+;dt= 0x2b 10bit
+;hts 0x1de
+;vts 0xc3c  vts = 1252 + P1:[0x05:0x06](hex2dec)/2 ;The VTS must be integer multiples of 4
+;Max Exp VTS-20
+;Min Exp 4 line
+;Suggest maxinum exposure time is 1 second if you want to achieve greater exposure time
+;analog gain 15.5x
+;digital gain (1x-32x)
+;OB 0x40
+
+
+20 fd 00
+20 20 0e
+sl 3 3   
+20 20 0b
+20 fd 00
+20 10 05
+20 11 2a
+20 12 03
+20 13 05
+20 14 43 ;dpll 402M
+20 15 02
+20 16 82
+20 17 05
+20 18 3c
+20 19 04
+20 1a 05
+20 1b f0
+20 1c 19 ;mpllout 720M
+20 1d 00
+20 1e 23 ;row clk equal to timer_clk/2
+20 1f 0f
+20 20 0f
+20 21 00
+
+20 fd 01
+20 1a 0a
+20 1b 08
+20 2a 01 ;col_ana_addr_size_4msb :binning must set
+20 2b 9a ;col_ana_addr_size_8lsb :binning must set
+
+20 fd 01
+20 12 00 ;bit0=1 colorbar en
+20 03 05
+20 04 08
+20 05 0e
+20 06 b0
+20 07 05
+20 21 02
+20 24 ff
+20 31 06
+20 33 03
+20 01 03
+20 19 10 ;n2p offset 64
+20 42 55 ;rst_clamp on , sig_clamp on
+20 43 00
+20 47 07
+20 48 08
+20 4c 38
+20 b2 7e ;1st comp
+20 b3 7b
+20 bd 08 
+20 d2 47 ;1st cap 1
+20 d3 10 ;ramp offset x1 1.1
+20 d4 0d ;ramp offset x2 0.95
+20 d5 08 ;ramp offset x4 0.75
+20 d6 07 ;ramp offset x8 0.7
+
+20 b1 00
+20 b4 00
+20 b5 07
+20 b6 07
+20 b7 0a ;vh 3.5v
+20 bc 44
+20 bf 42 ;range 747mv
+20 c1 10
+20 c3 24
+20 c8 03 ;vlow en
+20 c6 e0
+20 c7 30
+20 c9 f8
+20 e1 33 ;1x to 2x vlow 1.0v
+20 e2 bb ;2x to 16x vrfd_low AVDD
+
+20 51 0c ;timing
+20 52 0a ;timing
+20 57 8c ;timing
+20 59 09 ;timing
+20 5a 08 ;timing
+20 5e 10 ;timing
+20 60 02 ;timing
+20 6d 5c ;timing
+20 76 16 ;timing
+20 7c 1a ;timing
+20 90 28 ;timing
+20 91 16 ;timing
+20 92 1c ;timing 
+20 93 24 ;timing
+20 95 48 ;timing
+20 9c 06 ; col_boost_rst width
+20 ca 0c
+20 ce 0d
+
+20 fd 01 ;psr tuning
+20 c0 00 ;bit2 = 0 psnc en
+20 dd 18 ;1x
+20 de 19 ;1.5x
+20 df 32 ;2x
+20 e0 70 ;4x
+
+20 fd 01 ;bsun tuning
+20 c2 05 ;rst clamp dn en 
+20 d7 88
+20 d8 77
+20 d9 66
+
+20 fd 07 ;blc tuning
+20 00 f8 ;blc trigger en 
+20 01 2b ;blc on
+20 05 40
+20 08 03 ;black row start
+20 09 08 ;black row end
+20 28 6f
+20 2a 20
+20 2b 05
+20 2c 01 ;r_thres_man high 4bit
+20 50 02 ;zero row start
+20 51 03 ;zero row end
+20 5e 10 ;dither enable gain 4x
+20 52 00;k
+20 53 80
+20 54 00
+20 55 80
+20 56 00
+20 57 80
+20 58 00
+20 59 80
+20 5c 3f
+
+20 fd 02 
+20 9a 00 ;dpc off,if enable (set 0xf0) , row_num - 2
+20 a8 02;
+
+20 fd 02 ;cropping size
+20 a9 04;vsize_dpc[11:8]
+20 aa d0;vsize_dpc[7:0]
+20 ab 06;hsize_dpc[11:8]
+20 ac 68;hsize_dpc[7:0]
+
+20 a0 00
+20 a1 04
+20 a2 04 ;dem_v_size_4msb
+20 a3 c8 ;dem_v_size_8lsb
+20 a4 00
+20 a5 04
+20 a6 06 ;dem_h_size_4msb
+20 a7 60 ;dem_h_size_8lsb
+;For Bin size OTP_DPC mirror off/flip off
+20 fd 05
+20 04 60
+20 06 80
+20 07 99
+20 0D 03
+20 0F 03
+20 10 00
+20 11 00
+20 12 0C
+20 13 CF
+20 14 00
+20 15 00
+20 18 06
+20 19 68
+
+
+
+
+20 fd 00
+20 24 01 ;mipi clk inv en
+20 c0 16
+20 c1 08
+20 c2 30
+20 8e 06 ;mipi hsize msb
+20 8f 60 ;mipi hsize lsb,  3264
+20 90 04 ;mipi vsize msb
+20 91 c8 ;mipi vsize lsb,  2448
+20 93 0e
+20 94 77
+20 95 77
+20 96 10
+20 98 88
+20 9c 1a
+20 b7 02
+
+
+
+20 fd 00 ;must locate this group reg. at the end
+20 20 0f ;soft reset
+20 e7 03
+20 e7 00
+20 fd 01
+
+
+
+@@mipi stream on
+20 fd 00
+20 a0 01
+@@mipi stream off
+20 fd 00
+20 a0 00

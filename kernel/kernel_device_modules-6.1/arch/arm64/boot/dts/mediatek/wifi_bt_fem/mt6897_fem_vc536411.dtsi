@@ -1,0 +1,61 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2020 MediaTek Inc.
+ */
+&connfem {
+	epa-elna {
+		parts = <&nofem &nofem>,
+			<&vc536411 &nofem>;
+
+		hwid {
+			pcb {
+				/*
+				* num of pcb for specify hw part
+				* e.g. nofem
+				*/
+				oplus,pcb_num = <13>;
+				/*
+				* pcb map of hw
+				* format<pcb_num parts_index>
+				*/
+				oplus,pcb_map = <8 1>,
+						<16 1>,
+						<17 1>,
+						<24 1>,
+						<25 1>,
+						<26 1>,
+						<32 1>,
+						<33 0>,
+						<34 1>,
+						<40 1>,
+						<48 0>,
+						<49 1>,
+						<50 1>;
+			};
+		};
+
+		wifi {
+			flags-0 {
+				/* open-loop; */
+			};
+			flags-1 {
+				/* open-loop; */
+			};
+		};
+
+		bt {
+			flags-0 {
+				/* choose one of: epa_elna / epa / elna / bypass */
+				bypass;
+			};
+			flags-1 {
+				/* choose one of: epa_elna / epa / elna / bypass */
+				epa-elna;
+			};
+		};
+	};
+};
+
+&consys {
+	vcn33-always-on = <1>;
+};

@@ -1,0 +1,172 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2020 MediaTek Inc. */
+
+//&scp_i2c1{
+//	pinctrl-names = "default";
+//	pinctrl-0 = <&scp_i2c1_pins_default>;
+//};
+
+&afe {
+	etdm-out-ch = <4>;
+	etdm-in-ch = <4>;
+	bargein-use-cm1 = <1>;
+};
+
+&accdet {
+	headset-three-key-threshold = <0 82 170 306>;
+	headset-eint0-disable = <1>;
+	accdet-mic-vol = <7>;
+};
+
+&snd_audio_dsp {
+	mtk-dsp-playback = <0x1 0xc 0xffffffff 0x1A 0x30000>;
+	mtk-dsp-call-final = <0x0 0xc 0x11 0x1A 0x18000>;
+};
+
+&i2c6 {
+	clock-frequency = <400000>;
+
+	fsa4480: fsa4480@42 {
+		compatible = "qcom,fsa4480-i2c";
+		reg = <0x42>;
+		fsa4480,hp-bypass = <1>;
+		status = "okay";
+	};
+
+	 /* AWINIC AW882XX mono Smart PA */
+	aw882xx_smartpa_0: aw882xx_smartpa@34 {
+		 compatible = "awinic,aw882xx_smartpa";
+		 reg = <0x34>;
+		 #address-cells = <1>;
+		 #size-cells = <0>;
+		 #sound-dai-cells = <0>;
+		 sync-load = <1>;
+		 sound-channel = <3>;
+		 reset-gpio = <&pio 22 0x1>;
+		 aw-re-min = <5500>;
+		 aw-re-max= <8500>;
+		 aw-re-default = <6000>;
+		 aw-f0-min = <200>;
+		 aw-f0-max = <1000>;
+		 aw-f0-default = <900>;
+		 //aw-cali-mode = "none";
+		 need_f0_cali = <1>;
+		 spin-mode = "dsp_spin";
+		 monitor-mode = "hal_monitor";
+		 que_dela_work = <1>;
+		 fade-flag = <0>;
+		 status = "okay";
+	 };
+	aw882xx_smartpa_1: aw882xx_smartpa@35 {
+		 compatible = "awinic,aw882xx_smartpa";
+		 reg = <0x35>;
+		 #address-cells = <1>;
+		 #size-cells = <0>;
+		 #sound-dai-cells = <0>;
+		 sync-load = <1>;
+		 sound-channel = <0>;
+		 reset-gpio = <&pio 24 0x1>;
+		 aw-re-min = <5500>;
+		 aw-re-max= <8500>;
+		 aw-re-default = <6000>;
+		 aw-f0-min = <200>;
+		 aw-f0-max = <1000>;
+		 aw-f0-default = <900>;
+		 //aw-cali-mode = "none";
+		 need_f0_cali = <1>;
+		 spin-mode = "dsp_spin";
+		 monitor-mode = "hal_monitor";
+		 que_dela_work = <1>;
+		 fade-flag = <0>;
+		 status = "okay";
+	 };
+	aw882xx_smartpa_2: aw882xx_smartpa@36 {
+		 compatible = "awinic,aw882xx_smartpa";
+		 reg = <0x36>;
+		 #address-cells = <1>;
+		 #size-cells = <0>;
+		 #sound-dai-cells = <0>;
+		 sync-load = <1>;
+		 sound-channel = <2>;
+		 reset-gpio = <&pio 38 0x1>;
+		 aw-re-min = <5500>;
+		 aw-re-max= <8500>;
+		 aw-re-default = <6000>;
+		 aw-f0-min = <200>;
+		 aw-f0-max = <1000>;
+		 aw-f0-default = <900>;
+		 //aw-cali-mode = "none";
+		 need_f0_cali = <1>;
+		 spin-mode = "dsp_spin";
+		 monitor-mode = "hal_monitor";
+		 que_dela_work = <1>;
+		 fade-flag = <0>;
+		 status = "okay";
+	 };
+	aw882xx_smartpa_3: aw882xx_smartpa@37 {
+		 compatible = "awinic,aw882xx_smartpa";
+		 reg = <0x37>;
+		 #address-cells = <1>;
+		 #size-cells = <0>;
+		 #sound-dai-cells = <0>;
+		 sync-load = <1>;
+		 sound-channel = <1>;
+		 reset-gpio = <&pio 51 0x1>;
+		 aw-re-min = <5500>;
+		 aw-re-max= <8500>;
+		 aw-re-default = <6000>;
+		 aw-f0-min = <200>;
+		 aw-f0-max = <1000>;
+		 aw-f0-default = <900>;
+		 //aw-cali-mode = "none";
+		 need_f0_cali = <1>;
+		 spin-mode = "dsp_spin";
+		 monitor-mode = "hal_monitor";
+		 que_dela_work = <1>;
+		 fade-flag = <0>;
+		 status = "okay";
+	 };
+};
+
+&audio_extend {
+ 	//for nxp speaker
+ 	oplus,speaker-vendor = "awinic";
+ 	oplus,speaker-i2s-id = <8>;
+ 	oplus,speaker-i2s-id-in = <9>;
+	oplus,speaker-codec-name = "aw882xx_smartpa.6-0034", "aw882xx_smartpa.6-0035", "aw882xx_smartpa.6-0036","aw882xx_smartpa.6-0037";
+	oplus,speaker-codec-dai-name = "aw882xx-aif-6-34", "aw882xx-aif-6-35", "aw882xx-aif-6-36","aw882xx-aif-6-37";
+	oplus,spk-i2s-index = <25 24>;
+	status = "okay";
+};
+
+&sound {
+ 	mediatek,spk-i2s = <25 24>;
+ 	mediatek,spk-out-ch = <4>;
+ 	/* mtk_spk_i2s_mck = <3>; */
+ 	mediatek,speaker-codec {
+ 	    sound-dai = <&aw882xx_smartpa_0 &aw882xx_smartpa_1 &aw882xx_smartpa_2 &aw882xx_smartpa_3>;
+ 	};
+};
+
+	//&pio {
+	//	fsa_hs_det: fsa_hs_det {
+	//		pins_cmd_dat {
+	//			pinmux = <PINMUX_GPIO134__FUNC_GPIO134>;
+	//			slew-rate = <1>;  /*direction 0:in, 1:out*/
+	//			output-high;
+	//		};
+	//	};
+
+	//scp_i2c1_pins_default: scp_i2c1_pins_default {
+	//	pins_cmd_dat {
+	//		pinmux = <PINMUX_GPIO176__FUNC_SCP_SCL1>,
+	//				<PINMUX_GPIO177__FUNC_SCP_SDA1>;
+	//		/* 0x0: 75k    0x1: 10k */
+	//		/* 0x2: 5k      0x3: 4k     0x4:3k*/
+	//		/* 0x5: 2k   0x6: 1.5k   0x7:1k*/
+	//		bias-pull-up = <MTK_PULL_SET_RSEL_111>;
+	//	};
+	//};
+	//};
+
+

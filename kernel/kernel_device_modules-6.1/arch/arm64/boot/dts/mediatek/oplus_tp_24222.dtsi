@@ -1,0 +1,194 @@
+&spi2 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	hbp_spi_bus0:hbp_spi@0 {
+		compatible = "oplus,hbp_spi_bus";
+		reg = <0x0>;
+		status = "okay";
+
+		spi-max-frequency = <19000000>;
+		bus,spi-mode = <0>;
+		bus,rx-dummy = <0>;
+		bus,tx-dummy = <0>;
+	};
+};
+
+&odm {
+	focaltech:focaltech@0 {
+		compatible = "focaltech,ft3683g";
+		status = "okay";
+
+		device,id = <0>;
+		device,chip_name = "ft3683g";
+		device,resolution = <20096 44160>;
+
+		/*interrupt config*/
+		interrupt-parent = <&pio>;
+		interrupts = <9 0x2002>;
+		irq-gpio = <&pio 9 0x2002>;
+
+		pinctrl-names = "default",
+			"ts_reset_active",
+			"ts_reset_idle",
+			"ts_resume",
+			"ts_suspend";
+		pinctrl-0 = <&ts_int_active &ts_reset_active>;
+		pinctrl-1 = <&ts_reset_active>;
+		pinctrl-2 = <&ts_reset_idle>;
+		pinctrl-3 = <&ctp_oplus_spi_active>;
+		pinctrl-4 = <&ctp_oplus_spi_suspend>;
+
+		/*cs active state, not used now*/
+		spi,cs_active = <0>;
+
+		/*power config*/
+		power,avdd-supply = <&mt6368_vtp>;
+		power,avdd_volt = <3300000 3300000>;
+		/*
+		power,vddi-supply = <&mt6369_vtp>;
+		power,vddi_volt = <1800000 1800000>;
+		*/
+
+		/*bus config*/
+		device,attached_bus = <&hbp_spi_bus0>;
+	};
+
+	hbp:hbp@0 {
+		compatible = "oplus,hbp_core";
+		hbp,project = "milkway-s2";
+		hbp,devices = <&focaltech>;
+	};
+};
+
+&pio {
+	ts_int_active: ts_int_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO9__FUNC_GPIO9>;
+			bias-disable;
+			input-enable;
+		};
+	};
+	ts_reset_active: ts_reset_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO60__FUNC_GPIO60>;
+			output-high;
+		};
+	};
+	ts_reset_idle: ts_reset_idle {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO60__FUNC_GPIO60>;
+			output-low;
+		};
+	};
+	ctp_oplus_spi_active: spi_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO11__FUNC_SPI2_CLK>,
+				<PINMUX_GPIO12__FUNC_SPI2_CSB>,
+				<PINMUX_GPIO13__FUNC_SPI2_MI>,
+				<PINMUX_GPIO14__FUNC_SPI2_MO>;
+			bias-disable;
+			drive-strength = <4>;
+		};
+	};
+	ctp_oplus_spi_suspend: spi_suspend {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO11__FUNC_GPIO11>,
+					<PINMUX_GPIO12__FUNC_GPIO12>,
+					<PINMUX_GPIO13__FUNC_GPIO13>,
+					<PINMUX_GPIO14__FUNC_GPIO14>;
+			bias-disable;
+			output-low;
+			drive-strength = <2>;
+		};
+	};
+};
+
+&keypad {
+        keypad,volume-down = <&pio 31 0x00>;
+        pinctrl-names = "volume_down_as_int";
+        pinctrl-0 = <&volume_down_gpio_eint>;
+        status = "okay";
+};
+
+&pio {
+        volume_down_gpio_eint:volume_down@0{
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO31__FUNC_GPIO31>;
+                        slew-rate = <0>;  /*direction 0:in, 1:out*/
+                        input-enable;
+                        bias-disable;
+                };
+        };
+};
+
+&odm {
+        kpd_volume_down:kpd_volume_down {
+                compatible = "mediatek, VOLUME_DOWN-eint";
+                interrupt-parent = <&pio>;
+                interrupts = <31 IRQ_TYPE_EDGE_FALLING 31 0>;
+                debounce = <32000>;
+                status = "okay";
+        };
+};
+
+&odm {
+	devinfo {
+		status = "disabled";
+	};
+
+	devinfo_oplus {
+		compatible = "oplus-devinfo";
+
+		pinctrl-names = "default", "aboard_gpio0_sleep", "aboard_gpio0_active", "aboard_gpio0_idle";
+		pinctrl-0 = <&hw_pins_default>;
+		pinctrl-1 = <&aboard_pin_gpio0_sleep>;
+		pinctrl-2 = <&aboard_pin_gpio0_active>;
+		pinctrl-3 = <&aboard_pin_gpio0_idle>;
+
+		main-sub {
+			compatible = "hw-match, main-sub";
+			use_tristate_gpio;
+			rf_match_support;
+			aboard-gpio0 = <&pio 129 0>;
+			aboard-patterns = <1 0 1 0 1 0 1 0 1 0>;	/*0[high-resistance] 1[pull-down] 2[pull-up]*/
+			rf-patterns = <40 41 43 44 49 50 52 53 67 68 >;
+			/*main board*/
+			match-projects = <24222 24222 24222 24222 24222 24222 24222 24222 24222 24222>;
+		};
+	};
+};
+
+&pio{
+	hw_pins_default:default@hw_sub_id {
+	};
+
+	aboard_pin_gpio0_sleep:sleep@id0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO129__FUNC_GPIO129>;
+			slew-rate = <0>;
+			bias-pull-down = <MTK_PULL_SET_RSEL_000>;
+			input-enable;
+		};
+	};
+
+	aboard_pin_gpio0_active:active@id0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO129__FUNC_GPIO129>;
+			slew-rate = <0>;
+			bias-pull-up = <MTK_PULL_SET_RSEL_000>;
+			input-enable;
+		};
+	};
+
+	aboard_pin_gpio0_idle:idle@id0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO129__FUNC_GPIO129>;
+			slew-rate = <0>;
+			bias-disable;
+			input-enable;
+		};
+	};
+};
+

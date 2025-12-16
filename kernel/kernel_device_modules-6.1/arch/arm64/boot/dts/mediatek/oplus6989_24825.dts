@@ -1,0 +1,210 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2022 MediaTek Inc.
+ */
+#include "k6989v2_64.dts"
+/* Add for DX-4 ppb device-tree */
+#include "mediatek/oplus_ppb_24825.dtsi"
+/* #endif */
+
+/* Add for Subaru(24825) fingerprint device-tree */
+/* #ifdef CONFIG_UFF_FINGERPRINT */
+#include "mediatek/oplus_uff_24825.dtsi"
+/* #endif CONFIG_UFF_FINGERPRINT */
+
+//#ifdef OPLUS_FEATURE_SENSOR
+#include "mediatek/oplus_sensor_24825.dtsi"
+//#endif
+
+/* #ifdef OPLUS_FEATURE_CHG_BASIC */
+#include "mediatek/oplus_charge_24825.dtsi"
+/* #endif OPLUS_FEATURE_CHG_BASIC */
+
+/* Add for DX-4 ppb device-tree */
+#include "mediatek/oplus_ppb_24825.dtsi"
+/* #endif */
+
+&odm {
+    /*OPLUS_FEATURE_OEM_OCDT oppo project start */
+	oplus_project:oplus_project {
+		compatible = "oplus,oplus_project";
+	};
+
+	pmic_history_count:pmic_history_count {
+ 	};
+ 	pmic_history0:pmic_history0 {
+ 	};
+ 	pmic_history1:pmic_history1 {
+ 	};
+ 	pmic_history2:pmic_history2 {
+ 	};
+ 	pmic_history3:pmic_history3 {
+ 	};
+};
+
+/*
+ * Trustonic Mobilecore real driver
+ */
+&mobicore{
+        trustonic,real-drv = <1>;
+};
+
+&oplus_secure_common {
+    compatible = "oplus,secure_common";
+    oplus,sec_reg_num = <0>;
+    oplus,sec_en_anti_reg = <0>;
+    oplus,sec_override1_reg = <0>;
+    oplus,override1_en_value = <0>;
+};
+
+&pio {
+	//#ifdef OPLUS_VENDOR_SWTP
+	swtp: swtp {
+		compatible = "mediatek, swtp-eint";
+	};
+	 swtp_1: swtp_1 {
+        compatible = "mediatek, swtp1-eint";
+    };
+	//#endif  /*OPLUS_VENDOR_SWTP*/
+};
+
+&mtkheap_region_svp {
+    status = "ok";
+};
+&mtkheap_region_wfd {
+    status = "ok";
+};
+&mtee_svp {
+    mtee: MTEE {
+        compatible = "mediatek,mtk_svp_on_mtee_support";
+    };
+
+    svp: SecureVideoPath {
+        compatible = "mediatek,mtk_sec_video_path_support";
+    };
+};
+
+&odm {
+/* Add for sim detect */
+    oplus_sim_detect {
+        compatible = "oplus, sim_detect";
+        Hw,sim_det = <&pio 212 0x00>;
+    };
+};
+
+&soc {
+	oplus,blk-mq {
+		//for blk-mq.c block_graded_thread_enable
+		block_graded_thread_enable = "y";
+	};
+};
+
+&dispsys_config {
+	pinctrl-names = "mode_te_te", "mode_te_te1";
+	pinctrl-0 = <&mtkfb_pins_lcm_dsi_te>;
+	pinctrl-1 = <&mtkfb_pins_lcm_dsi1_te>;
+	bypass-pc-path = <1>;
+	relay-aal-hw = <1>;
+	status = "okay";
+
+	helper-value = <0>, /*MTK_DRM_OPT_STAGE*/
+		<1>, /*MTK_DRM_OPT_USE_CMDQ*/
+		<1>, /*MTK_DRM_OPT_USE_M4U*/
+		<1>, /*MTK_DRM_OPT_MMQOS_SUPPORT*/
+		<1>, /*MTK_DRM_OPT_MMDVFS_SUPPORT*/
+		<0>, /*MTK_DRM_OPT_SODI_SUPPORT*/
+		<1>, /*MTK_DRM_OPT_IDLE_MGR*/
+		<0>, /*MTK_DRM_OPT_IDLEMGR_SWTCH_DECOUPLE*/
+		<0>, /*MTK_DRM_OPT_IDLEMGR_BY_REPAINT*/
+		<0>, /*MTK_DRM_OPT_IDLEMGR_ENTER_ULPS*/
+		<0>, /*MTK_DRM_OPT_IDLEMGR_KEEP_LP11*/
+		<0>, /*MTK_DRM_OPT_DYNAMIC_RDMA_GOLDEN_SETTING*/
+		<1>, /*MTK_DRM_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ*/
+		<1>, /*MTK_DRM_OPT_IDLEMGR_ASYNC*/
+		<0>, /*MTK_DRM_OPT_MET_LOG*/
+		<1>, /*MTK_DRM_OPT_USE_PQ*/
+		<1>, /*MTK_DRM_OPT_ESD_CHECK_RECOVERY*/
+		<1>, /*MTK_DRM_OPT_ESD_CHECK_SWITCH*/
+		<1>, /*MTK_DRM_OPT_PRESENT_FENCE*/
+		<0>, /*MTK_DRM_OPT_RDMA_UNDERFLOW_AEE*/
+		<0>, /*MTK_DRM_OPT_DSI_UNDERRUN_AEE*/
+		<0>, /*MTK_DRM_OPT_ODDMR_UNDERRUN_AEE*/
+		<1>, /*MTK_DRM_OPT_HRT*/
+		<1>, /*MTK_DRM_OPT_HRT_MODE*/
+		<0>, /*MTK_DRM_OPT_DELAYED_TRIGGER*/
+		<1>, /*MTK_DRM_OPT_OVL_EXT_LAYER*/
+		<1>, /*MTK_DRM_OPT_AOD*/
+		<1>, /*MTK_DRM_OPT_RPO*/
+		<0>, /*MTK_DRM_OPT_DUAL_PIPE*/
+		<0>, /*MTK_DRM_OPT_DC_BY_HRT*/
+		<1>, /*MTK_DRM_OPT_OVL_WCG*/
+		<0>, /*MTK_DRM_OPT_OVL_SBCH*/
+		<1>, /*MTK_DRM_OPT_COMMIT_NO_WAIT_VBLANK*/
+		<0>, /*MTK_DRM_OPT_MET*/
+		<0>, /*MTK_DRM_OPT_REG_PARSER_RAW_DUMP*/
+		<0>, /*MTK_DRM_OPT_VP_PQ*/
+		<0>, /*MTK_DRM_OPT_GAME_PQ*/
+		<0>, /*MTK_DRM_OPT_MMPATH*/
+		<1>, /*MTK_DRM_OPT_HBM*/
+		<0>, /*MTK_DRM_OPT_VDS_PATH_SWITCH*/
+		<0>, /*MTK_DRM_OPT_LAYER_REC*/
+		<1>, /*MTK_DRM_OPT_CLEAR_LAYER*/
+		<0>, /*MTK_DRM_OPT_LFR*/
+		<0>, /*MTK_DRM_OPT_SF_PF*/
+		<0>, /*MTK_DRM_OPT_DYN_MIPI_CHANGE*/
+		<0>, /*MTK_DRM_OPT_PRIM_DUAL_PIPE*/
+		<1>, /*MTK_DRM_OPT_MSYNC2_0*/
+		<0>, /*MTK_DRM_OPT_MSYNC2_0_WAIT_EPT*/
+		<1>, /*MTK_DRM_OPT_MML_PRIMARY*/
+		<1>, /*MTK_DRM_OPT_MML_SUPPORT_CMD_MODE*/
+		<1>, /*MTK_DRM_OPT_MML_PQ*/
+		<1>, /*MTK_DRM_OPT_MML_IR*/
+		<0>, /*MTK_DRM_OPT_DUAL_TE*/
+		<1>, /*MTK_DRM_OPT_RES_SWITCH*/
+		<1>, /*MTK_DRM_OPT_RES_SWITCH_ON_AP*/
+		<0>, /*MTK_DRM_OPT_PREFETCH_TE*/
+		<0>, /*MTK_DRM_OPT_VIDLE_APSRC_OFF*/
+		<0>, /*MTK_DRM_OPT_VIDLE_DSI_PLL_OFF*/
+		<1>, /*MTK_DRM_OPT_CHECK_TRIGGER_MERGE*/
+		<0>, /*MTK_DRM_OPT_VIRTUAL_DISP*/
+		<1>, /*MTK_DRM_OPT_OVL_BW_MONITOR*/
+		<0>, /*MTK_DRM_OPT_GPU_CACHE*/
+		<1>, /*MTK_DRM_OPT_SPHRT*/
+		<0>, /*MTK_DRM_OPT_SDPA_OVL_SWITCH*/
+		<1>, /*MTK_DRM_OPT_HRT_BY_LARB*/
+		<0>, /*MTK_DRM_OPT_TILE_OVERHEAD*/
+		<1>, /*MTK_DRM_OPT_VIDLE_TOP_EN*/
+		<0>, /*MTK_DRM_OPT_VIDLE_MTCMOS_DT_EN*/
+		<1>, /*MTK_DRM_OPT_VIDLE_MMINFRA_DT_EN*/
+		<0>, /*MTK_DRM_OPT_VIDLE_DVFS_DT_EN*/
+		<0>, /*MTK_DRM_OPT_VIDLE_QOS_DT_EN*/
+		<0>, /*MTK_DRM_OPT_VIDLE_GCE_TS_EN*/
+		<0>, /*MTK_DRM_OPT_VIDLE_DECOUPLE_MODE*/
+		<0>, /*MTK_DRM_OPT_VIDLE_VDO_PANEL*/
+		<0>, /*MTK_DRM_OPT_VIDLE_HOME_SCREEN_IDLE*/
+		<0>, /*MTK_DRM_OPT_DPC_PRE_TE_EN*/
+		<0>, /*MTK_DRM_OPT_PARTIAL_UPDATE*/
+		<1>, /*MTK_DRM_OPT_SLC_ALL_CACHE*/
+		<1>, /*MTK_DRM_OPT_OVL_WCG_BY_COLOR_MODE*/
+		<0>, /*"MTK_DRM_OPT_OVLSYS_CASCADE"*/
+		<1>; /*"MTK_DRM_OPT_PER_LARB_PORT_PEAK"*/
+};
+
+//Add 6363 change
+&mt6363keys {
+	compatible = "mediatek,mt6363-keys";
+	mediatek,long-press-mode = <2>;
+	power-off-time-sec = <0>;
+};
+
+#include "oplus_tp_24825.dtsi"
+#include <oplus6989_24825/cust.dtsi>
+#include "mediatek/nfc/mt6989_24825_thn31s.dtsi"
+#include "mediatek/cust_mt6989_24825_audio.dtsi"
+#include "mediatek/cust_mt6989_subaru_camera_v4l2.dtsi"
+#include "mediatek/oplus_misc_24825.dtsi"
+#include "mediatek/oplus_connectivity_cust_mt6989v2_connfem_24825.dtsi"
+#include "oplus_connectivity_24825.dtsi"
+#include "mediatek/display/oplus6989_24825_display.dtsi"
+#include "mediatek/cust_mt6989_thermal.dtsi"
+/*End of this file, DO NOT ADD ANYTHING HERE*/
